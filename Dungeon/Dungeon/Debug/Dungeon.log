@@ -1,0 +1,5 @@
+﻿  Warrior.cpp
+d:\ai\dungeon\dungeon\dungeon\warrior.cpp(106): warning C4244: 'argument': conversion from 'double' to 'int', possible loss of data
+d:\ai\dungeon\dungeon\dungeon\warrior.cpp(191): warning C4715: 'Warrior::AstarSearch': not all control paths return a value
+  Dungeon.vcxproj -> D:\AI\dungeon\Dungeon\Debug\Dungeon.exe
+  Dungeon.vcxproj -> D:\AI\dungeon\Dungeon\Debug\Dungeon.pdb (Full PDB)
