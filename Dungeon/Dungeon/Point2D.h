@@ -26,7 +26,7 @@ public:
     int GetX() const;
     int GetY() const;
     bool operator==(const Point2D& other);
-	void calcDistanceFromTarget(Point2D * targetPoint);
+	double calcDistanceFromTarget(Point2D * targetPoint);
 	void set_g(int levelOfPointInTree);
 	double get_g();
 	double get_h();

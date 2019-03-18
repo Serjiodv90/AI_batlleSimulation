@@ -21,6 +21,10 @@ const int WARRIOR_2 = 9;
 const int WARRIOR1_PATH = 10;
 const int WARRIOR2_PATH = 11;
 
+//const enum WARRIOR1_COLORS {WARRIOR = 8, PATH = 10, VISITED = 3};
+//const enum WARRIOR2_COLORS {WARRIOR = 9, PATH = 11, VISITED = 4};
+
+
 const int MSIZE = 100;
 const double SQSIZE = 2.0 / MSIZE;
 

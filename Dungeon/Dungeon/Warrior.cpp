@@ -16,22 +16,32 @@ Warrior::~Warrior()
 {
 }
 
-Warrior::Warrior(Point2D& initialLocation, int warriorBehaviour, int** maze) 
+Warrior::Warrior(Point2D& initialLocation, int warriorBehaviour)
+	: warriorLocation(initialLocation)
 {
     behaviour = warriorBehaviour;
-    warriorLocation = Point2D(initialLocation);
+//	setWarriorLocation(initialLocation);//Point2D(initialLocation.GetX(), initialLocation.GetY());
     lifeCounter = 15;
     ammoCounter = 5;
     medicineCounter = 5;
-	this->status = Warrior::SEARCHING_FOR_MEDICINE;
+	this->status = Warrior::SEARCHING_FOR_AMMO;
 	this->grayPQ.push(&this->warriorLocation);
-	this->mymaze = maze;
+	
 
 }
 
 void Warrior::setWarriorLocation(Point2D& location)
 {
-    warriorLocation = location;
+    warriorLocation = location/*Point2D(location.GetX(), location.GetY())*/;
+}
+
+void Warrior::moveWarriorByOne()
+{
+	if (this->path.size() > 0)
+	{
+		setWarriorLocation(*this->path[0]);
+		this->path.erase(this->path.begin());
+	}
 }
 
 Warrior::Status Warrior::getWarriorStatus()
@@ -104,7 +114,8 @@ void Warrior::storeCurrentPointForAstar(int row, int col, Point2D* parentPoint, 
 {
 	Point2D* ptAddToGray = new Point2D(col, row);
 	ptAddToGray->set_f(targetPoint, parentPoint->get_g() + 1);
-	this->parentPointsForPath[row][col] = parentPoint;
+	if(!this->parentPointsForPath[row][col])
+		this->parentPointsForPath[row][col] = parentPoint;
 	grayPQ.push(ptAddToGray);
 }
 
@@ -123,11 +134,11 @@ void Warrior::savePath(Point2D* pt, int beginPoint, int goalPoint, int warriorPa
 {
 	Point2D* pt1 = pt;
 
-	while (pt1 != NULL && this->mymaze[pt1->GetY()][pt1->GetX()] != beginPoint)
+	while (pt1 != NULL && maze[pt1->GetY()][pt1->GetX()] != beginPoint)
 	{
 		if (maze[pt1->GetY()][pt1->GetX()] != goalPoint)
 			maze[pt1->GetY()][pt1->GetX()] = warriorPathNumber;
-		this->path.insert(this->path.begin(), pt);
+		this->path.insert(this->path.begin(), pt1);
 		pt1 = this->parentPointsForPath[pt1->GetY()][pt1->GetX()];
 	}
 }
@@ -141,7 +152,6 @@ bool Warrior::AstarSearch(Point2D& startPoint, Point2D& targetPoint, int maze[MS
 	
 
 	if (grayPQ.empty())	//grey is the edges that didn't visited yet
-	//	aStar_started = false;	//there is no path to the target
 		return false;
 	else
 	{
@@ -150,6 +160,7 @@ bool Warrior::AstarSearch(Point2D& startPoint, Point2D& targetPoint, int maze[MS
 
 		mazeRow = pt->GetY(); 
 		mazeCol = pt->GetX();
+		cout << "mazeRow: " << mazeRow << ",\tmazeCol" << mazeCol << endl;
 
 		//paint pt VISITED
 		if (*pt == targetPoint)	//found target	
@@ -158,7 +169,7 @@ bool Warrior::AstarSearch(Point2D& startPoint, Point2D& targetPoint, int maze[MS
 			this->status = IN_MOVEMENT;
 			savePathBool = true;
 		}
-
+		
 		else
 		{
 			if (maze[mazeRow][mazeCol] != warriorMazeNumber)
@@ -181,11 +192,12 @@ bool Warrior::AstarSearch(Point2D& startPoint, Point2D& targetPoint, int maze[MS
 			mazeCol = pt->GetX() - 1;
 			setPointAsGrayForAStar(mazeRow, mazeCol, pt, maze, goalPointNumber, &targetPoint);
 
-			if (savePathBool)	//target was found
-			{
-				savePath(pt, warriorMazeNumber, goalPointNumber, warriorPathNumber, maze);
-				return true;
-			}
+		}
+
+		if (savePathBool)	//target was found
+		{
+			savePath(pt, warriorMazeNumber, goalPointNumber, warriorPathNumber, maze);
+			return true;
 		}
 	}
 }
@@ -200,14 +212,16 @@ void Warrior::escapeFromEnemy(const Warrior& enemy)
     
 }
 
-void Warrior::searchMedicine(Point2D& medicinePoint, Point2D& startPoint, int maze[MSIZE][MSIZE],
+void Warrior::searchMedicine(Point2D& medicinePoint, int maze[MSIZE][MSIZE],
 	int goalPointNumber, int warriorVisitedNumber, int warriorMazeNumber, int warriorPathNumber)
 {
-	 AstarSearch(startPoint, medicinePoint, maze,
+	 AstarSearch(this->warriorLocation, medicinePoint, maze,
 		goalPointNumber, warriorVisitedNumber, warriorMazeNumber, warriorPathNumber);
 }
 
-void Warrior::searchAmmo(const Point2D* medicinePoint)
+void Warrior::searchAmmo(Point2D& ammoPoint, int maze[MSIZE][MSIZE],
+	int goalPointNumber, vector<int> warrior_colors/*int warriorVisitedNumber, int warriorMazeNumber, int warriorPathNumber*/)
 {
-    
+	AstarSearch(this->warriorLocation, ammoPoint, maze,
+		goalPointNumber, warrior_colors[2], warrior_colors[0], warrior_colors[1]/*warriorVisitedNumber, warriorMazeNumber, warriorPathNumber*/);
 }

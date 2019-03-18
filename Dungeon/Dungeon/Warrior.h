@@ -25,7 +25,6 @@ public:
 private:
 
 	Status status;
-	int** mymaze;
 
     int ammoCounter, medicineCounter, lifeCounter;
     int behaviour;
@@ -34,6 +33,8 @@ private:
 	vector<Point2D*> path;
 	priority_queue<Point2D*, vector<Point2D*>, ComparePointsByDist> grayPQ;
 	Point2D* parentPointsForPath[MSIZE][MSIZE];
+	vector<vector<int>> warriorMaze;
+	Point2D* targetPoint;
 
 	bool AstarSearch(Point2D& startPoint, Point2D& targetPoint, int maze[MSIZE][MSIZE], int goalPointNumber, int warriorVisitedNumber, int warriorMazeNumber, int warriorPathNumber);
 
@@ -48,13 +49,14 @@ private:
 	void savePath(Point2D * pt, int beginPoint, int goalPoint, int warriorPathNumber, int maze[MSIZE][MSIZE]);
 
 public:
-    Warrior(Point2D& initialLocation, int warriorBehaviour, int** maze);
+    Warrior(Point2D& initialLocation, int warriorBehaviour);
     
     void searchEnemy(const Warrior& enemy);
     void escapeFromEnemy(const Warrior& enemy);
-    void searchMedicine(Point2D& medicinePoint, Point2D& startPoint, int maze[MSIZE][MSIZE],
+    void searchMedicine(Point2D& medicinePoint, int maze[MSIZE][MSIZE],
 		int goalPointNumber, int warriorVisitedNumber, int warriorMazeNumber, int warriorPathNumber);
-    void searchAmmo(const Point2D* medicinePoint);
+    void searchAmmo(Point2D& ammoPoint, int maze[MSIZE][MSIZE],
+		int goalPointNumber, vector<int> warrior_colors/*int warriorVisitedNumber, int warriorMazeNumber, int warriorPathNumber*/);
     
     void addAmmo();
     void addMedicine();
@@ -69,6 +71,8 @@ public:
     
     Point2D getWarriorLocation();
     void setWarriorLocation(Point2D& location);
+
+	void moveWarriorByOne();
 
 	Status getWarriorStatus();
 };

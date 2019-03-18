@@ -44,12 +44,15 @@ bool Point2D::operator==(const Point2D& other)
     return x==other.x && y== other.y;
 }
 
-void Point2D::calcDistanceFromTarget(Point2D * targetPoint)
+double Point2D::calcDistanceFromTarget(Point2D * targetPoint)
 {
 	double xPow = pow(this->x - targetPoint->x, 2);
 	double yPow = pow(this->y - targetPoint->y, 2);
 	this->h = sqrtl(xPow + yPow);
+	return this->h;
 }
+
+
 
 void Point2D::set_g(int levelOfPointInTree)
 {

@@ -31,8 +31,10 @@ int counterAmmo = 0;
 int counterMedicine = 0;
 
 Room all_rooms[NUM_ROOMS];
-Warrior warrior1;
-Warrior warrior2;
+Warrior* warrior1;
+Warrior* warrior2;
+
+vector<Warrior*> warriors /*= { warrior1, warrior2 }*/;
 
 // vector for tunnels
 vector <Point2D> gray;
@@ -47,6 +49,10 @@ vector <Point2D> ammo;
 priority_queue<Node, vector<Node>, CompareNodes> pq;
 
 Point2D start,target;
+vector<vector<int>> warriors_color = { { WARRIOR_1, WARRIOR1_PATH,  VISITED_W1 },{ WARRIOR_2, WARRIOR2_PATH, VISITED_W2 } };
+
+
+int idleCounter = 0;
 
 void SetupMaze();
 
@@ -277,13 +283,14 @@ void DrawMedicine(Room& room)
     }
 }
 
-void initWarriorInitialRoom(int warrior, Warrior& warriorObj, Room& room)
+void initWarriorInitialRoom(int warrior, Warrior*& warriorObj, Room& room)
 {
 	Point2D tmpCenter = findPositionForObjectInRoom(room);
 	int currentY = tmpCenter.GetY();
 	int currentX = tmpCenter.GetX();
 	maze[currentY][currentX] = warrior;
-	warriorObj = Warrior(Point2D(currentX, currentY), 0, reinterpret_cast<int**>(maze));
+	cout << "Warrior - " << warrior << " location: (X,Y)-->(" << currentX << ", " << currentY << ") " << endl;
+	warriorObj = new Warrior(Point2D(currentX, currentY), 0);
 }
 
 void SetupMaze()
@@ -349,13 +356,18 @@ void SetupMaze()
         }
         
         
-        if (counter == warriorRandRoom1)
-            initWarriorInitialRoom(WARRIOR_1, warrior1, all_rooms[counter]);
+		if (counter == warriorRandRoom1)
+			initWarriorInitialRoom(WARRIOR_1, warrior1, all_rooms[counter]);
+			
+		
 
 		if (counter == warriorRandRoom2)
 			initWarriorInitialRoom(WARRIOR_2, warrior2, all_rooms[counter]);
+		
     }
-    
+
+	warriors.push_back(warrior1);
+	warriors.push_back(warrior2);
     DigTunnels();
 }
 
@@ -396,7 +408,7 @@ void DrawMaze()
                     glColor3d(1, 0, 0); // DARK RED;
                     break;
 				case WARRIOR1_PATH:
-					glColor3d(0,0,0); // GREEN;
+					glColor3d(1,1,1); // GREEN;
 					break;
 				case WARRIOR2_PATH:
 					glColor3d(0.2, 0.9, 0.7); // GREEN;
@@ -414,6 +426,23 @@ void DrawMaze()
     
 }
 
+Point2D& findNearestTargetObjectForWarrior(vector<Point2D>& objVector, Warrior& warrior)
+{
+	Point2D warriorLocation = warrior.getWarriorLocation();
+	Point2D* nearestObj = &objVector[0];
+	double minDist = warriorLocation.calcDistanceFromTarget(nearestObj);
+	double tmpDist;
+
+	for (int i = 1; i < objVector.size(); i++)
+	{
+		tmpDist = warriorLocation.calcDistanceFromTarget(&objVector[i]);
+		if (tmpDist < minDist)
+			nearestObj = &objVector[i];
+	}
+
+	return *nearestObj;
+}
+
 void display()
 {
     glClear(GL_COLOR_BUFFER_BIT);
@@ -425,8 +454,31 @@ void display()
 
 void idle()
 {
-	if(warrior1.getWarriorStatus() == Warrior::SEARCHING_FOR_MEDICINE)
-		warrior1.searchMedicine(medicine[0], warrior1.getWarriorLocation(), maze, MEDICINE, VISITED_W1, WARRIOR_1, WARRIOR1_PATH);
+	for (int i = 0; i < warriors.size(); i++)
+	{
+		if (warriors[i]->getWarriorStatus() == Warrior::SEARCHING_FOR_MEDICINE)
+		{
+			Point2D target = findNearestTargetObjectForWarrior(medicine, *warriors[i]);
+			warriors[i]->searchMedicine(target, maze, MEDICINE, VISITED_W1, WARRIOR_1, WARRIOR1_PATH);
+		}
+		else if (warriors[i]->getWarriorStatus() == Warrior::SEARCHING_FOR_AMMO)
+		{
+			Point2D target = findNearestTargetObjectForWarrior(ammo, *warriors[i]);
+			warriors[i]->searchMedicine(target, maze, AMMO, warriors_color[i][2], warriors_color[i][0], warriors_color[i][1]/*VISITED_W1, WARRIOR_1, WARRIOR1_PATH*/);
+		}
+		else if (warriors[i]->getWarriorStatus() == Warrior::IN_MOVEMENT)
+		{
+			idleCounter++;
+			cout << "Counter : " << idleCounter << endl;
+			if (idleCounter % 5 == 0)
+			{
+				maze[warriors[i]->getWarriorLocation().GetY()][warriors[i]->getWarriorLocation().GetX()] = SPACE;
+				warriors[i]->moveWarriorByOne();
+				maze[warriors[i]->getWarriorLocation().GetY()][warriors[i]->getWarriorLocation().GetX()] = WARRIOR_1;
+			}
+		}
+	}
+		
 		
     glutPostRedisplay();// calls indirectly to display
 }
