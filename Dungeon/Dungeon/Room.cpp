@@ -70,3 +70,31 @@ bool Room::IsOverlap(const Room& other)
 {
     return abs(center.GetX()-other.GetCenter().GetX()) < (width+other.width)/2+5 && abs(center.GetY() - other.GetCenter().GetY()) < (height+other.height)/2+5;    
 }
+
+void Room::setRoomBounds(int top, int bottom, int left, int right)
+{
+	this->top = top;
+	this->bottom = bottom;
+	this->left = left;
+	this->right = right;
+}
+
+int Room::getTop()
+{
+	return this->top;
+}
+
+int Room::getBottom()
+{
+	return this->bottom;
+}
+
+int Room::getLeft()
+{
+	return this->left;
+}
+
+int Room::getRight()
+{
+	return this->right;
+}

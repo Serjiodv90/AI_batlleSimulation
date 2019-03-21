@@ -33,7 +33,12 @@ const int DOWN = 2;
 const int LEFT = 3;
 const int RIGHT = 4;
 
-const int MAX_NUM_OF_MEDICINE = 2;
-const int MAX_NUM_OF_AMMO = 2;
+const int MAX_NUM_OF_MEDICINE = 7;
+const int MAX_NUM_OF_AMMO = 7;
+
+const int MIN_ROOM_WIDTH_AND_HEIGHT = 5;
+const int MAX_ROOM_WIDTH = 15;
+const int MAX_ROOM_HEIGHT = 25;
+
 
 #endif // !__DEFINITION_H

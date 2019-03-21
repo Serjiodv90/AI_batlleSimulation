@@ -17,6 +17,8 @@ private:
     Point2D center;
     int width, height;
     bool hasAmmo, hasMedicine;
+	int top, bottom, left, right;
+
 public:
     Room(const Point2D& center_point, int w, int h);
     Point2D GetCenter() const;
@@ -27,6 +29,12 @@ public:
     bool GetHasAmmo();
     bool GetHasMedicine();
     bool IsOverlap(const Room& other);
+
+	void setRoomBounds(int top, int bottom, int left, int right);
+	int getTop();
+	int getBottom();
+	int getLeft();
+	int getRight();
 };
 
 

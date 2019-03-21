@@ -8,31 +8,35 @@
 
 #include "Warrior.h"
 
-Warrior::Warrior()
-{
-}
+
 
 Warrior::~Warrior()
 {
 }
 
-Warrior::Warrior(Point2D& initialLocation, int warriorBehaviour)
+Warrior::Warrior(Point2D& initialLocation, int warriorBehaviour, vector<vector<int>>& maze, vector<int>& colors)
 	: warriorLocation(initialLocation)
 {
     behaviour = warriorBehaviour;
-//	setWarriorLocation(initialLocation);//Point2D(initialLocation.GetX(), initialLocation.GetY());
     lifeCounter = 15;
     ammoCounter = 5;
     medicineCounter = 5;
 	this->status = Warrior::SEARCHING_FOR_AMMO;
 	this->grayPQ.push(&this->warriorLocation);
-	
+	copy(maze.begin(), maze.end(), back_inserter(this->warriorMaze));
+	this->gameMaze = &maze;
+	this->warriorColors = &colors;
 
 }
 
 void Warrior::setWarriorLocation(Point2D& location)
 {
     warriorLocation = location/*Point2D(location.GetX(), location.GetY())*/;
+}
+
+vector<vector<int>>& Warrior::getWarriorMaze()
+{
+	return this->warriorMaze;
 }
 
 void Warrior::moveWarriorByOne()
@@ -103,9 +107,9 @@ void Warrior::fightAgainstEnemy()
     
 }
 
-bool Warrior::isBfsFoundPath(int row, int col, int goalPoint, int maze[MSIZE][MSIZE])
+bool Warrior::isBfsFoundPath(int row, int col, int goalPoint, /*int maze[MSIZE][MSIZE]*/vector<vector<int>>& maze)
 {
-	if (maze[row][col] == goalPoint)   //found target
+	if (/*maze*/(*this->gameMaze)[row][col] == goalPoint)   //found target
 		return true;
 	return false;
 }
@@ -119,31 +123,34 @@ void Warrior::storeCurrentPointForAstar(int row, int col, Point2D* parentPoint, 
 	grayPQ.push(ptAddToGray);
 }
 
-void Warrior::setPointAsGrayForAStar(int& mazeRow, int& mazeCol, Point2D*& parentPoint, int maze[MSIZE][MSIZE], int goalPointNumber, Point2D* targetPoint)
+void Warrior::setPointAsGrayForAStar(int& mazeRow, int& mazeCol, Point2D*& parentPoint, /*int maze[MSIZE][MSIZE]*/vector<vector<int>>& maze, int goalPointNumber, Point2D* targetPoint)
 {
-	if (isBfsFoundPath(mazeRow, mazeCol, goalPointNumber, maze))	//found target			
-		storeCurrentPointForAstar(mazeRow, mazeCol, parentPoint, targetPoint);
-	else if (maze[mazeRow][mazeCol] == SPACE)
+	if (mazeRow < (*this->gameMaze).size() && mazeCol < (*this->gameMaze).size())
 	{
-		maze[mazeRow][mazeCol] = GRAY;
-		storeCurrentPointForAstar(mazeRow, mazeCol, parentPoint, targetPoint);
+		if (isBfsFoundPath(mazeRow, mazeCol, goalPointNumber, maze))	//found target			
+			storeCurrentPointForAstar(mazeRow, mazeCol, parentPoint, targetPoint);
+		else if (/*maze*/(*this->gameMaze)[mazeRow][mazeCol] == SPACE && this->warriorMaze[mazeRow][mazeCol] == SPACE)
+		{
+			/*maze*/this->warriorMaze[mazeRow][mazeCol] = GRAY;
+			storeCurrentPointForAstar(mazeRow, mazeCol, parentPoint, targetPoint);
+		}
 	}
 }
 
-void Warrior::savePath(Point2D* pt, int beginPoint, int goalPoint, int warriorPathNumber, int maze[MSIZE][MSIZE])
+void Warrior::savePath(Point2D* pt, int beginPoint, int goalPoint, int warriorPathNumber, /*int maze[MSIZE][MSIZE]*/vector<vector<int>>& maze)
 {
 	Point2D* pt1 = pt;
 
-	while (pt1 != NULL && maze[pt1->GetY()][pt1->GetX()] != beginPoint)
+	while (pt1 != NULL && (*this->gameMaze)[pt1->GetY()][pt1->GetX()] != beginPoint)
 	{
-		if (maze[pt1->GetY()][pt1->GetX()] != goalPoint)
-			maze[pt1->GetY()][pt1->GetX()] = warriorPathNumber;
+		if (/*maze*/(*this->gameMaze)[pt1->GetY()][pt1->GetX()] != goalPoint)
+			/*maze*/this->warriorMaze[pt1->GetY()][pt1->GetX()] = warriorPathNumber;
 		this->path.insert(this->path.begin(), pt1);
 		pt1 = this->parentPointsForPath[pt1->GetY()][pt1->GetX()];
 	}
 }
 
-bool Warrior::AstarSearch(Point2D& startPoint, Point2D& targetPoint, int maze[MSIZE][MSIZE],
+bool Warrior::AstarSearch(Point2D& startPoint, Point2D& targetPoint, /*int maze[MSIZE][MSIZE]*/vector<vector<int>>& maze,
 	int goalPointNumber, int warriorVisitedNumber, int warriorMazeNumber, int warriorPathNumber)
 {
 	Point2D* pt;
@@ -160,7 +167,7 @@ bool Warrior::AstarSearch(Point2D& startPoint, Point2D& targetPoint, int maze[MS
 
 		mazeRow = pt->GetY(); 
 		mazeCol = pt->GetX();
-		cout << "mazeRow: " << mazeRow << ",\tmazeCol" << mazeCol << endl;
+		cout << "mazeRow: " << mazeRow << ",\tmazeCol: " << mazeCol << endl;
 
 		//paint pt VISITED
 		if (*pt == targetPoint)	//found target	
@@ -172,8 +179,8 @@ bool Warrior::AstarSearch(Point2D& startPoint, Point2D& targetPoint, int maze[MS
 		
 		else
 		{
-			if (maze[mazeRow][mazeCol] != warriorMazeNumber)
-				maze[mazeRow][mazeCol] = warriorVisitedNumber;	//y is i, x is j
+			if (/*maze*/(*this->gameMaze)[mazeRow][mazeCol] != warriorMazeNumber)
+				/*maze*/this->warriorMaze[mazeRow][mazeCol] = warriorVisitedNumber;	//y is i, x is j
 
 			//check down
 			mazeRow = pt->GetY() + 1;
@@ -212,16 +219,20 @@ void Warrior::escapeFromEnemy(const Warrior& enemy)
     
 }
 
-void Warrior::searchMedicine(Point2D& medicinePoint, int maze[MSIZE][MSIZE],
-	int goalPointNumber, int warriorVisitedNumber, int warriorMazeNumber, int warriorPathNumber)
+void Warrior::searchMedicine(Point2D& medicinePoint, vector<vector<int>>& maze,	int goalPointNumber, vector<int> warrior_colors)
 {
+	if (this->targetPoint != &medicinePoint)
+	{
+		this->targetPoint = &medicinePoint;
+		this->targetPointType = Warrior::SEARCHING_FOR_MEDICINE;
+	}
+
 	 AstarSearch(this->warriorLocation, medicinePoint, maze,
-		goalPointNumber, warriorVisitedNumber, warriorMazeNumber, warriorPathNumber);
+		goalPointNumber, warrior_colors[2], warrior_colors[0], warrior_colors[1]);
 }
 
-void Warrior::searchAmmo(Point2D& ammoPoint, int maze[MSIZE][MSIZE],
-	int goalPointNumber, vector<int> warrior_colors/*int warriorVisitedNumber, int warriorMazeNumber, int warriorPathNumber*/)
+void Warrior::searchAmmo(Point2D& ammoPoint, vector<vector<int>>& maze, int goalPointNumber, vector<int> warrior_colors)
 {
 	AstarSearch(this->warriorLocation, ammoPoint, maze,
-		goalPointNumber, warrior_colors[2], warrior_colors[0], warrior_colors[1]/*warriorVisitedNumber, warriorMazeNumber, warriorPathNumber*/);
+		goalPointNumber, warrior_colors[2], warrior_colors[0], warrior_colors[1]);
 }
