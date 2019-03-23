@@ -98,3 +98,25 @@ int Room::getRight()
 {
 	return this->right;
 }
+
+bool Room::isObjInRoom(Point2D & obj)
+{
+	int obj_x = obj.GetX();
+	int obj_y = obj.GetY();
+
+	if (obj_x > this->left && obj_x < this->right
+		&& obj_y > this->top && obj_y < this->bottom)
+		return true;
+
+	return false;
+}
+
+bool Room::operator==(const Room & other)
+{
+	return this->center == other.center;
+}
+
+bool Room::operator!=(const Room & other)
+{
+	return !(*this == other);
+}

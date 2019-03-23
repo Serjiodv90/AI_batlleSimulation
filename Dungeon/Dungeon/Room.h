@@ -35,6 +35,10 @@ public:
 	int getBottom();
 	int getLeft();
 	int getRight();
+
+	bool isObjInRoom(Point2D& obj);
+	bool operator==(const Room& other);
+	bool operator!=(const Room& other);
 };
 
 

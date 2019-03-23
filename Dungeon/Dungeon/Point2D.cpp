@@ -41,7 +41,16 @@ int Point2D::GetY() const
 
 bool Point2D::operator==(const Point2D& other)
 {
-    return x==other.x && y== other.y;
+	if(this != nullptr && &other != nullptr)
+		return x==other.x && y== other.y;
+	return false;
+}
+
+bool Point2D::operator!=(const Point2D & other)
+{
+	if (this != nullptr && &other != nullptr)
+		return !(*this == other);
+	return false;
 }
 
 double Point2D::calcDistanceFromTarget(Point2D * targetPoint)

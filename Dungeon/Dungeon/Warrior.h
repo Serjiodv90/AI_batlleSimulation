@@ -12,6 +12,7 @@
 #include <algorithm>
 #include <iostream>
 #include <iterator>
+#include "Room.h"
 
 using namespace std;
 
@@ -40,6 +41,7 @@ private:
 
 	Point2D* targetPoint;
 	Status targetPointType;
+	Room* currentRoom;
 
 	bool AstarSearch(Point2D& startPoint, Point2D& targetPoint,vector<vector<int>>& maze, int goalPointNumber, int warriorVisitedNumber, int warriorMazeNumber, int warriorPathNumber);
 
@@ -53,8 +55,10 @@ private:
 
 	void savePath(Point2D * pt, int beginPoint, int goalPoint, int warriorPathNumber, vector<vector<int>>& maze);
 
+	void clearwarriorMaze();
+
 public:
-    Warrior(Point2D& initialLocation, int warriorBehaviour, vector<vector<int>>& maze, vector<int>& colors);
+    Warrior(Point2D& initialLocation, int warriorBehaviour, vector<vector<int>>& maze, vector<int>& colors, Room& currentRoom);
     
     void searchEnemy(const Warrior& enemy);
     void escapeFromEnemy(const Warrior& enemy);
@@ -75,10 +79,17 @@ public:
     void shoot();
     void getHurt(int damage);
     
-    Point2D getWarriorLocation();
+    Point2D& getWarriorLocation();
     void setWarriorLocation(Point2D& location);
 	vector<vector<int>>& getWarriorMaze();
 	void moveWarriorByOne();
 
 	Status getWarriorStatus();
+	void setWarriorStatus(Status status);
+
+	Status getPreviousTargetPointType();
+	Point2D& getPreviousTargetPoint();
+
+	void setCurrentRoom(Room& room);
+	Room& getCurrentRoom();
 };

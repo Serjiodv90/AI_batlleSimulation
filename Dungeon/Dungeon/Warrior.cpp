@@ -14,8 +14,8 @@ Warrior::~Warrior()
 {
 }
 
-Warrior::Warrior(Point2D& initialLocation, int warriorBehaviour, vector<vector<int>>& maze, vector<int>& colors)
-	: warriorLocation(initialLocation)
+Warrior::Warrior(Point2D& initialLocation, int warriorBehaviour, vector<vector<int>>& maze, vector<int>& colors, Room& currentRoom)
+	: warriorLocation(initialLocation), currentRoom(&currentRoom)
 {
     behaviour = warriorBehaviour;
     lifeCounter = 15;
@@ -26,7 +26,6 @@ Warrior::Warrior(Point2D& initialLocation, int warriorBehaviour, vector<vector<i
 	copy(maze.begin(), maze.end(), back_inserter(this->warriorMaze));
 	this->gameMaze = &maze;
 	this->warriorColors = &colors;
-
 }
 
 void Warrior::setWarriorLocation(Point2D& location)
@@ -53,7 +52,32 @@ Warrior::Status Warrior::getWarriorStatus()
 	return this->status;
 }
 
-Point2D Warrior::getWarriorLocation()
+void Warrior::setWarriorStatus(Status status)
+{
+	this->status = status;
+}
+
+Warrior::Status Warrior::getPreviousTargetPointType()
+{
+	return this->targetPointType;
+}
+
+Point2D & Warrior::getPreviousTargetPoint()
+{
+	return *this->targetPoint;
+}
+
+void Warrior::setCurrentRoom(Room& room)
+{
+	this->currentRoom = &room;
+}
+
+Room & Warrior::getCurrentRoom()
+{
+	return *this->currentRoom;
+}
+
+Point2D & Warrior::getWarriorLocation()
 {
     return warriorLocation;
 }
@@ -219,12 +243,25 @@ void Warrior::escapeFromEnemy(const Warrior& enemy)
     
 }
 
+void Warrior::clearwarriorMaze()
+{
+	for (int i = 0; i < this->warriorMaze.size(); i++)
+		for (int j = 0; j < this->warriorMaze[i].size(); j++)
+			if (find(this->warriorColors->begin(), this->warriorColors->end(), this->warriorMaze[i][j]) != this->warriorColors->end())
+				this->warriorMaze[i][j] = SPACE;
+}
+
 void Warrior::searchMedicine(Point2D& medicinePoint, vector<vector<int>>& maze,	int goalPointNumber, vector<int> warrior_colors)
 {
-	if (this->targetPoint != &medicinePoint)
+	if (*this->targetPoint != medicinePoint)
 	{
 		this->targetPoint = &medicinePoint;
 		this->targetPointType = Warrior::SEARCHING_FOR_MEDICINE;
+
+		//clear the warriorMaze, path, and PQ
+		this->path.clear();
+		clearwarriorMaze();	
+		this->grayPQ = priority_queue<Point2D*, vector<Point2D*>, ComparePointsByDist>();	//clear the pq
 	}
 
 	 AstarSearch(this->warriorLocation, medicinePoint, maze,
@@ -233,6 +270,17 @@ void Warrior::searchMedicine(Point2D& medicinePoint, vector<vector<int>>& maze,	
 
 void Warrior::searchAmmo(Point2D& ammoPoint, vector<vector<int>>& maze, int goalPointNumber, vector<int> warrior_colors)
 {
+	if (this->targetPoint && *this->targetPoint != ammoPoint)
+	{
+		this->targetPoint = &ammoPoint;
+		this->targetPointType = Warrior::SEARCHING_FOR_MEDICINE;
+
+		//clear the warriorMaze, path, and PQ
+		this->path.clear();
+		clearwarriorMaze();
+		this->grayPQ = priority_queue<Point2D*, vector<Point2D*>, ComparePointsByDist>();	//clear the pq
+	}
+
 	AstarSearch(this->warriorLocation, ammoPoint, maze,
 		goalPointNumber, warrior_colors[2], warrior_colors[0], warrior_colors[1]);
 }
