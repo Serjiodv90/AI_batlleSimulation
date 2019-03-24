@@ -496,6 +496,41 @@ bool isWarriorChangedRoom(Warrior& warrior)
 
 }
 
+bool checkWarriorReachedObject(Warrior& warrior)
+{
+	Point2D* target = &warrior.getPreviousTargetPoint();
+	Warrior::Status warriorStatus = warrior.getPreviousTargetPointType();
+	vector<Point2D>::iterator it;
+
+	if (warrior.getWarriorLocation() == *target)
+	{
+		if (warriorStatus == Warrior::SEARCHING_FOR_MEDICINE)
+		{
+			it = find(medicine.begin(), medicine.end(), *target);
+			medicine.erase(it);
+			return true;
+		}
+		else if (warriorStatus == Warrior::SEARCHING_FOR_AMMO)
+		{
+			it = find(ammo.begin(), ammo.end(), *target);
+			ammo.erase(it);
+			return true;
+		}
+	}
+
+	return false;
+
+}
+
+//in case that one of the warriors reached its target, check if that target is the other's warrior's target also
+//if it is, change it
+void changeWarriorTargetPoint(Warrior& otherWarrior, Point2D& irelevantPoint)
+{
+	if (otherWarrior.getPreviousTargetPoint() == irelevantPoint)	//this means that the other warrior found the same target and took it
+		otherWarrior.setWarriorStatus(otherWarrior.getPreviousTargetPointType());
+	
+}
+
 void idle()
 {
 	for (int i = 0; i < warriors.size(); i++)
@@ -503,15 +538,9 @@ void idle()
 		Point2D target = findNearestTargetObjectForWarrior(/*medicine,*/ *warriors[i]);
 
 		if (warriors[i]->getWarriorStatus() == Warrior::SEARCHING_FOR_MEDICINE)
-		{			
-			//Point2D target = findNearestTargetObjectForWarrior(/*medicine,*/ *warriors[i]);
 			warriors[i]->searchMedicine(target, maze, MEDICINE, warriors_color[i]);
-		}
 		else if (warriors[i]->getWarriorStatus() == Warrior::SEARCHING_FOR_AMMO)
-		{
-			//Point2D target = findNearestTargetObjectForWarrior(/*ammo,*/ *warriors[i]);
 			warriors[i]->searchAmmo(target, maze, AMMO, warriors_color[i]);
-		}
 		else if (warriors[i]->getWarriorStatus() == Warrior::IN_MOVEMENT)
 		{
 			idleCounter++;
@@ -524,13 +553,16 @@ void idle()
 
 				if (isWarriorChangedRoom(*warriors[i]))
 				{
+					cout << "warrior: " << i << " ,changed room" << endl;
 					Point2D target = findNearestTargetObjectForWarrior(/*ammo,*/ *warriors[i]);
 					if (target != warriors[i]->getPreviousTargetPoint())
 					{
 						warriors[i]->setWarriorStatus(warriors[i]->getPreviousTargetPointType());
-						
 					}
 				}
+
+				if (checkWarriorReachedObject(*warriors[i]))
+					changeWarriorTargetPoint(*warriors[i + 1 % warriors.size()], warriors[i]->getWarriorLocation());
 				
 			}
 		}

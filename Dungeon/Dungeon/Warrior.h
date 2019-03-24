@@ -38,7 +38,6 @@ private:
 	vector<vector<int>>* gameMaze;
 	vector<int>* warriorColors;	// 0 : warrior color in the maze, 1 : warrior's path color, 2 : warrior's visited color
 	
-
 	Point2D* targetPoint;
 	Status targetPointType;
 	Room* currentRoom;
