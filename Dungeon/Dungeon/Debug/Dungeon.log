@@ -1,8 +1,2 @@
-﻿  main.cpp
-d:\ai\dungeon\dungeon\dungeon\main.cpp(73): warning C4305: 'argument': truncation from 'double' to 'GLclampf'
-d:\ai\dungeon\dungeon\dungeon\main.cpp(140): warning C4101: 'weight': unreferenced local variable
-d:\ai\dungeon\dungeon\dungeon\main.cpp(453): warning C4018: '<': signed/unsigned mismatch
-d:\ai\dungeon\dungeon\dungeon\main.cpp(536): warning C4018: '<': signed/unsigned mismatch
-d:\ai\dungeon\dungeon\dungeon\main.cpp(259): warning C4172: returning address of local variable or temporary
-  Dungeon.vcxproj -> D:\AI\dungeon\Dungeon\Debug\Dungeon.exe
+﻿  Dungeon.vcxproj -> D:\AI\dungeon\Dungeon\Debug\Dungeon.exe
   Dungeon.vcxproj -> D:\AI\dungeon\Dungeon\Debug\Dungeon.pdb (Full PDB)

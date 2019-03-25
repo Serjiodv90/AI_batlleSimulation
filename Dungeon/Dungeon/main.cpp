@@ -496,6 +496,17 @@ bool isWarriorChangedRoom(Warrior& warrior)
 
 }
 
+void deleteObjectFromMaze(Point2D& obj)
+{
+	int currentY = obj.GetY();
+	int currentX = obj.GetX();
+
+	maze[currentY][currentX] = SPACE;
+	maze[currentY - 1][currentX] = SPACE;
+	maze[currentY + 1][currentX] = SPACE;
+}
+
+//checks if warrior reached its target, if it did then remove it from maze and vector
 bool checkWarriorReachedObject(Warrior& warrior)
 {
 	Point2D* target = &warrior.getPreviousTargetPoint();
@@ -516,6 +527,8 @@ bool checkWarriorReachedObject(Warrior& warrior)
 			ammo.erase(it);
 			return true;
 		}
+
+		deleteObjectFromMaze(*target);
 	}
 
 	return false;
@@ -544,7 +557,6 @@ void idle()
 		else if (warriors[i]->getWarriorStatus() == Warrior::IN_MOVEMENT)
 		{
 			idleCounter++;
-			cout << "Counter : " << idleCounter << endl;
 			if (idleCounter % 5 == 0)
 			{
 				maze[warriors[i]->getWarriorLocation().GetY()][warriors[i]->getWarriorLocation().GetX()] = SPACE;
@@ -562,7 +574,10 @@ void idle()
 				}
 
 				if (checkWarriorReachedObject(*warriors[i]))
+				{
 					changeWarriorTargetPoint(*warriors[i + 1 % warriors.size()], warriors[i]->getWarriorLocation());
+
+				}
 				
 			}
 		}

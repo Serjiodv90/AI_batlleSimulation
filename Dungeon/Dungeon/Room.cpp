@@ -104,8 +104,8 @@ bool Room::isObjInRoom(Point2D & obj)
 	int obj_x = obj.GetX();
 	int obj_y = obj.GetY();
 
-	if (obj_x > this->left && obj_x < this->right
-		&& obj_y > this->top && obj_y < this->bottom)
+	if (obj_x >= this->left && obj_x <= this->right
+		&& obj_y >= this->top && obj_y <= this->bottom)
 		return true;
 
 	return false;
