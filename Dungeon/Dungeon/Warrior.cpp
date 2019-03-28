@@ -263,8 +263,11 @@ void Warrior::clearwarriorMaze()
 {
 	for (int i = 0; i < this->warriorMaze.size(); i++)
 		for (int j = 0; j < this->warriorMaze[i].size(); j++)
-			if (find(this->warriorColors->begin(), this->warriorColors->end(), this->warriorMaze[i][j]) != this->warriorColors->end())
+			if (find(this->warriorColors->begin(), this->warriorColors->end(), this->warriorMaze[i][j]) != this->warriorColors->end()
+				|| this->warriorMaze[i][j] == GRAY)
 				this->warriorMaze[i][j] = SPACE;
+
+	this->warriorMaze[this->warriorLocation.GetY()][this->warriorLocation.GetX()] = (*this->warriorColors)[0];
 }
 
 void Warrior::searchMedicine(Point2D& medicinePoint, int goalPointNumber)

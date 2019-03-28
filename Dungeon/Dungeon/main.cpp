@@ -51,6 +51,7 @@ int idleCounter = 0;
 bool drawWarrior1Maze = false;
 bool drawWarrior2Maze = false;
 bool isGameOver = false;
+bool startGame = false;
 
 void SetupMaze();
 
@@ -592,27 +593,33 @@ void idle()
 {
 	if (!isGameOver)
 	{
-		for (int i = 0; i < warriors.size(); i++)
+		if (startGame)
 		{
-			if (&warriors[i]->getPreviousTargetPoint())
-				cout << "\n\nWarrior - " << (i == 0 ? "Black: \n" : "Red: \n")
-				<< "position: (" << (warriors[i]->getWarriorLocation().GetX()) << ", " << (warriors[i]->getWarriorLocation().GetY())
-				<< "\ntarget: (" << warriors[i]->getPreviousTargetPoint().GetX() << ", " << warriors[i]->getPreviousTargetPoint().GetY()
-				<< "\n\n" << endl;
-
-			Point2D& target = findNearestTargetObjectForWarrior(*warriors[i]);
-
-			if (warriors[i]->getWarriorStatus() == Warrior::SEARCHING_FOR_MEDICINE)
-				warriors[i]->searchMedicine(target, MEDICINE);
-			else if (warriors[i]->getWarriorStatus() == Warrior::SEARCHING_FOR_AMMO)
-				warriors[i]->searchAmmo(target, AMMO);
-			else if (warriors[i]->getWarriorStatus() == Warrior::IN_MOVEMENT)
+			for (int i = 0; i < warriors.size(); i++)
 			{
-				idleCounter++;
-				if (idleCounter % 5 == 0)
+				if (&warriors[i]->getPreviousTargetPoint())
+					cout << "\n\nWarrior - " << (i == 0 ? "Black: \n" : "Red: \n")
+					<< "position: (" << (warriors[i]->getWarriorLocation().GetX()) << ", " << (warriors[i]->getWarriorLocation().GetY())
+					<< "\ntarget: (" << warriors[i]->getPreviousTargetPoint().GetX() << ", " << warriors[i]->getPreviousTargetPoint().GetY()
+					<< "\n\n" << endl;
+
+				Point2D& target = findNearestTargetObjectForWarrior(*warriors[i]);
+
+				if (warriors[i]->getWarriorStatus() == Warrior::SEARCHING_FOR_MEDICINE)
+					warriors[i]->searchMedicine(target, MEDICINE);
+				else if (warriors[i]->getWarriorStatus() == Warrior::SEARCHING_FOR_AMMO)
+					warriors[i]->searchAmmo(target, AMMO);
+				else if (warriors[i]->getWarriorStatus() == Warrior::IN_MOVEMENT)
 				{
-					handleWarriorInMovement(i);
+					idleCounter++;
+					if (idleCounter % 5 == 0)
+					{
+						handleWarriorInMovement(i);
+					}
 				}
+
+				if (isGameOver)
+					break;
 			}
 		}
 	}
@@ -639,6 +646,8 @@ void Menu(int choice)
 		drawWarrior1Maze = false;
 		drawWarrior2Maze = false;
 		break;
+	case 4:
+		startGame = true;
 	default:
 		break;
 	}
@@ -661,6 +670,7 @@ int main(int argc, char* argv[])
 	glutAddMenuEntry("Draw warrior black maze", 1);
 	glutAddMenuEntry("Draw warrior red maze", 2);
 	glutAddMenuEntry("Draw battlefield maze", 3);
+	glutAddMenuEntry("Start", 4);
 	glutAttachMenu(GLUT_RIGHT_BUTTON);
 
 	glutMainLoop();

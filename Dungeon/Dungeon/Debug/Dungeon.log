@@ -1,8 +1,8 @@
-﻿  main.cpp
-d:\ai\dungeon\dungeon\dungeon\main.cpp(74): warning C4305: 'argument': truncation from 'double' to 'GLclampf'
-d:\ai\dungeon\dungeon\dungeon\main.cpp(141): warning C4101: 'weight': unreferenced local variable
-d:\ai\dungeon\dungeon\dungeon\main.cpp(470): warning C4018: '<': signed/unsigned mismatch
-d:\ai\dungeon\dungeon\dungeon\main.cpp(595): warning C4018: '<': signed/unsigned mismatch
-d:\ai\dungeon\dungeon\dungeon\main.cpp(260): warning C4172: returning address of local variable or temporary
+﻿  Warrior.cpp
+d:\ai\dungeon\dungeon\dungeon\warrior.cpp(159): warning C4244: 'argument': conversion from 'double' to 'int', possible loss of data
+d:\ai\dungeon\dungeon\dungeon\warrior.cpp(167): warning C4018: '<': signed/unsigned mismatch
+d:\ai\dungeon\dungeon\dungeon\warrior.cpp(264): warning C4018: '<': signed/unsigned mismatch
+d:\ai\dungeon\dungeon\dungeon\warrior.cpp(265): warning C4018: '<': signed/unsigned mismatch
+d:\ai\dungeon\dungeon\dungeon\warrior.cpp(250): warning C4715: 'Warrior::AstarSearch': not all control paths return a value
   Dungeon.vcxproj -> D:\AI\dungeon\Dungeon\Debug\Dungeon.exe
   Dungeon.vcxproj -> D:\AI\dungeon\Dungeon\Debug\Dungeon.pdb (Full PDB)
