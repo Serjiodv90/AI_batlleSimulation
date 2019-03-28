@@ -21,7 +21,7 @@ Warrior::Warrior(Point2D& initialLocation, int warriorBehaviour, vector<vector<i
     lifeCounter = 15;
     ammoCounter = 5;
     medicineCounter = 5;
-	this->status = Warrior::SEARCHING_FOR_AMMO;
+	this->status = this->targetPointType = Warrior::SEARCHING_FOR_AMMO;
 	this->grayPQ.push(&this->warriorLocation);
 	copy(maze.begin(), maze.end(), back_inserter(this->warriorMaze));
 	this->gameMaze = &maze;
@@ -67,6 +67,14 @@ Point2D & Warrior::getPreviousTargetPoint()
 	return *this->targetPoint;
 }
 
+void Warrior::setTragetPoint(Point2D& target)
+{
+	if (&target)
+		this->targetPoint = new Point2D(target.GetX(), target.GetY());
+	else
+		this->targetPoint = nullptr;
+}
+
 void Warrior::setCurrentRoom(Room& room)
 {
 	this->currentRoom = &room;
@@ -75,6 +83,13 @@ void Warrior::setCurrentRoom(Room& room)
 Room & Warrior::getCurrentRoom()
 {
 	return *this->currentRoom;
+}
+
+bool Warrior::checkWarriorsInTheSameRoom(Warrior & otherWarrior)
+{
+	if (*this->currentRoom == *otherWarrior.currentRoom)
+		return true;
+	return false;
 }
 
 Point2D & Warrior::getWarriorLocation()
@@ -131,51 +146,53 @@ void Warrior::fightAgainstEnemy()
     
 }
 
-bool Warrior::isBfsFoundPath(int row, int col, int goalPoint, /*int maze[MSIZE][MSIZE]*/vector<vector<int>>& maze)
+bool Warrior::isBfsFoundPath(int row, int col, int goalPoint)
 {
-	if (/*maze*/(*this->gameMaze)[row][col] == goalPoint)   //found target
+	if ((*this->gameMaze)[row][col] == goalPoint)   //found target
 		return true;
 	return false;
 }
 
-void Warrior::storeCurrentPointForAstar(int row, int col, Point2D* parentPoint, Point2D* targetPoint)
+void Warrior::storeCurrentPointForAstar(int row, int col, Point2D* parentPoint)
 {
 	Point2D* ptAddToGray = new Point2D(col, row);
-	ptAddToGray->set_f(targetPoint, parentPoint->get_g() + 1);
+	ptAddToGray->set_f(this->targetPoint, parentPoint->get_g() + 1);
 	if(!this->parentPointsForPath[row][col])
 		this->parentPointsForPath[row][col] = parentPoint;
 	grayPQ.push(ptAddToGray);
 }
 
-void Warrior::setPointAsGrayForAStar(int& mazeRow, int& mazeCol, Point2D*& parentPoint, /*int maze[MSIZE][MSIZE]*/vector<vector<int>>& maze, int goalPointNumber, Point2D* targetPoint)
+void Warrior::setPointAsGrayForAStar(int& mazeRow, int& mazeCol, Point2D*& parentPoint, int goalPointNumber)
 {
 	if (mazeRow < (*this->gameMaze).size() && mazeCol < (*this->gameMaze).size())
 	{
-		if (isBfsFoundPath(mazeRow, mazeCol, goalPointNumber, maze))	//found target			
-			storeCurrentPointForAstar(mazeRow, mazeCol, parentPoint, targetPoint);
-		else if (/*maze*/(*this->gameMaze)[mazeRow][mazeCol] == SPACE && this->warriorMaze[mazeRow][mazeCol] == SPACE)
+		if (isBfsFoundPath(mazeRow, mazeCol, goalPointNumber))	//found target			
+			storeCurrentPointForAstar(mazeRow, mazeCol, parentPoint);
+		else if ((*this->gameMaze)[mazeRow][mazeCol] == SPACE && this->warriorMaze[mazeRow][mazeCol] == SPACE)
 		{
-			/*maze*/this->warriorMaze[mazeRow][mazeCol] = GRAY;
-			storeCurrentPointForAstar(mazeRow, mazeCol, parentPoint, targetPoint);
+			this->warriorMaze[mazeRow][mazeCol] = GRAY;
+			storeCurrentPointForAstar(mazeRow, mazeCol, parentPoint);
 		}
 	}
 }
 
-void Warrior::savePath(Point2D* pt, int beginPoint, int goalPoint, int warriorPathNumber, /*int maze[MSIZE][MSIZE]*/vector<vector<int>>& maze)
+void Warrior::savePath(Point2D* pt, int goalPoint)
 {
 	Point2D* pt1 = pt;
 
-	while (pt1 != NULL && (*this->gameMaze)[pt1->GetY()][pt1->GetX()] != beginPoint)
+	while (pt1 != NULL && (*this->gameMaze)[pt1->GetY()][pt1->GetX()] != (*this->warriorColors)[0])
 	{
-		if (/*maze*/(*this->gameMaze)[pt1->GetY()][pt1->GetX()] != goalPoint)
-			/*maze*/this->warriorMaze[pt1->GetY()][pt1->GetX()] = warriorPathNumber;
+		if ((*this->gameMaze)[pt1->GetY()][pt1->GetX()] != goalPoint)
+			this->warriorMaze[pt1->GetY()][pt1->GetX()] = (*this->warriorColors)[1];
 		this->path.insert(this->path.begin(), pt1);
 		pt1 = this->parentPointsForPath[pt1->GetY()][pt1->GetX()];
 	}
 }
 
-bool Warrior::AstarSearch(Point2D& startPoint, Point2D& targetPoint, /*int maze[MSIZE][MSIZE]*/vector<vector<int>>& maze,
-	int goalPointNumber, int warriorVisitedNumber, int warriorMazeNumber, int warriorPathNumber)
+/*************************************************/
+//consider stop ASTAR when get out of current room - problom in tunnels may occure 
+/*************************************************/
+bool Warrior::AstarSearch(Point2D& targetPoint,	int goalPointNumber)
 {
 	Point2D* pt;
 	int mazeRow, mazeCol;
@@ -191,43 +208,42 @@ bool Warrior::AstarSearch(Point2D& startPoint, Point2D& targetPoint, /*int maze[
 
 		mazeRow = pt->GetY(); 
 		mazeCol = pt->GetX();
-		cout << "mazeRow: " << mazeRow << ",\tmazeCol: " << mazeCol << endl;
 
 		//paint pt VISITED
-		if (*pt == targetPoint)	//found target	
+		if (*pt == *this->targetPoint)	//found target	
 		{
-			storeCurrentPointForAstar(mazeRow, mazeCol, pt, &targetPoint);
+			storeCurrentPointForAstar(mazeRow, mazeCol, pt);
 			this->status = IN_MOVEMENT;
 			savePathBool = true;
 		}
 		
 		else
 		{
-			if (/*maze*/(*this->gameMaze)[mazeRow][mazeCol] != warriorMazeNumber)
-				/*maze*/this->warriorMaze[mazeRow][mazeCol] = warriorVisitedNumber;	//y is i, x is j
+			if ((*this->gameMaze)[mazeRow][mazeCol] != (*this->warriorColors)[0])
+				this->warriorMaze[mazeRow][mazeCol] = (*this->warriorColors)[2];	//y is i, x is j
 
 			//check down
 			mazeRow = pt->GetY() + 1;
-			setPointAsGrayForAStar(mazeRow, mazeCol, pt, maze, goalPointNumber, &targetPoint);
+			setPointAsGrayForAStar(mazeRow, mazeCol, pt,  goalPointNumber);
 
 			//check up
 			mazeRow = pt->GetY() - 1;
-			setPointAsGrayForAStar(mazeRow, mazeCol, pt, maze, goalPointNumber, &targetPoint);
+			setPointAsGrayForAStar(mazeRow, mazeCol, pt, goalPointNumber);
 
 			//check right
 			mazeRow = pt->GetY();
 			mazeCol = pt->GetX() + 1;
-			setPointAsGrayForAStar(mazeRow, mazeCol, pt, maze, goalPointNumber, &targetPoint);
+			setPointAsGrayForAStar(mazeRow, mazeCol, pt, goalPointNumber);
 
 			//check left
 			mazeCol = pt->GetX() - 1;
-			setPointAsGrayForAStar(mazeRow, mazeCol, pt, maze, goalPointNumber, &targetPoint);
+			setPointAsGrayForAStar(mazeRow, mazeCol, pt, goalPointNumber);
 
 		}
 
 		if (savePathBool)	//target was found
 		{
-			savePath(pt, warriorMazeNumber, goalPointNumber, warriorPathNumber, maze);
+			savePath(pt, goalPointNumber);
 			return true;
 		}
 	}
@@ -251,11 +267,11 @@ void Warrior::clearwarriorMaze()
 				this->warriorMaze[i][j] = SPACE;
 }
 
-void Warrior::searchMedicine(Point2D& medicinePoint, vector<vector<int>>& maze,	int goalPointNumber, vector<int> warrior_colors)
+void Warrior::searchMedicine(Point2D& medicinePoint, int goalPointNumber)
 {
 	if (*this->targetPoint != medicinePoint)
 	{
-		this->targetPoint = &medicinePoint;
+		this->targetPoint = &(medicinePoint);
 		this->targetPointType = Warrior::SEARCHING_FOR_MEDICINE;
 
 		//clear the warriorMaze, path, and PQ
@@ -264,28 +280,29 @@ void Warrior::searchMedicine(Point2D& medicinePoint, vector<vector<int>>& maze,	
 		this->grayPQ = priority_queue<Point2D*, vector<Point2D*>, ComparePointsByDist>();	//clear the pq
 	}
 
-	 AstarSearch(this->warriorLocation, medicinePoint, maze,
-		goalPointNumber, warrior_colors[2], warrior_colors[0], warrior_colors[1]);
+	 AstarSearch(medicinePoint, goalPointNumber);
 }
 
-void Warrior::searchAmmo(Point2D& ammoPoint, vector<vector<int>>& maze, int goalPointNumber, vector<int> warrior_colors)
+void Warrior::searchAmmo(Point2D& ammoPoint, int goalPointNumber)
 {
 	if (this->targetPoint)
 	{
 		if (*this->targetPoint != ammoPoint)
 		{
-			this->targetPoint = &ammoPoint;
-			this->targetPointType = Warrior::SEARCHING_FOR_MEDICINE;
+			delete this->targetPoint;
+			this->targetPoint = new Point2D(ammoPoint.GetX(), ammoPoint.GetY());
+			this->targetPointType = Warrior::SEARCHING_FOR_AMMO;
 
 			//clear the warriorMaze, path, and PQ
 			this->path.clear();
 			clearwarriorMaze();
 			this->grayPQ = priority_queue<Point2D*, vector<Point2D*>, ComparePointsByDist>();	//clear the pq
+			this->grayPQ.push(&this->warriorLocation);
 		}
 	}
 	else
-		this->targetPoint = &ammoPoint;
+		this->targetPoint = new Point2D(ammoPoint.GetX(), ammoPoint.GetY());;
 
-	AstarSearch(this->warriorLocation, ammoPoint, maze,
-		goalPointNumber, warrior_colors[2], warrior_colors[0], warrior_colors[1]);
+	AstarSearch(ammoPoint, goalPointNumber);
+
 }

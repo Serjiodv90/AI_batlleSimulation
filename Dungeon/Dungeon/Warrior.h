@@ -13,6 +13,7 @@
 #include <iostream>
 #include <iterator>
 #include "Room.h"
+#include <utility>
 
 using namespace std;
 
@@ -42,17 +43,17 @@ private:
 	Status targetPointType;
 	Room* currentRoom;
 
-	bool AstarSearch(Point2D& startPoint, Point2D& targetPoint,vector<vector<int>>& maze, int goalPointNumber, int warriorVisitedNumber, int warriorMazeNumber, int warriorPathNumber);
+	bool AstarSearch(Point2D& targetPoint, int goalPointNumber);
 
     void fightAgainstEnemy();
 
-	bool isBfsFoundPath(int row, int col, int goalPoint, vector<vector<int>>& maze);
+	bool isBfsFoundPath(int row, int col, int goalPoint);
 
-	void storeCurrentPointForAstar(int row, int col, Point2D * parentPoint, Point2D * targetPoint);
+	void storeCurrentPointForAstar(int row, int col, Point2D * parentPoint);
 
-	void setPointAsGrayForAStar(int & mazeRow, int & mazeCol, Point2D *& parentPoint, vector<vector<int>>& maze, int goalPointNumber, Point2D* targetPoint);
+	void setPointAsGrayForAStar(int& mazeRow, int& mazeCol, Point2D*& parentPoint, int goalPointNumber);
 
-	void savePath(Point2D * pt, int beginPoint, int goalPoint, int warriorPathNumber, vector<vector<int>>& maze);
+	void savePath(Point2D * pt, int goalPoint);
 
 	void clearwarriorMaze();
 
@@ -61,11 +62,9 @@ public:
     
     void searchEnemy(const Warrior& enemy);
     void escapeFromEnemy(const Warrior& enemy);
-    void searchMedicine(Point2D& medicinePoint, vector<vector<int>>& maze,
-		int goalPointNumber, vector<int> warrior_colors);
+    void searchMedicine(Point2D& medicinePoint, int goalPointNumber);
 
-    void searchAmmo(Point2D& ammoPoint, vector<vector<int>>& maze,
-		int goalPointNumber, vector<int> warrior_colors);
+    void searchAmmo(Point2D& ammoPoint, int goalPointNumber);
     
     void addAmmo();
     void addMedicine();
@@ -88,7 +87,10 @@ public:
 
 	Status getPreviousTargetPointType();
 	Point2D& getPreviousTargetPoint();
+	void setTragetPoint(Point2D& target);
 
 	void setCurrentRoom(Room& room);
 	Room& getCurrentRoom();
+
+	bool checkWarriorsInTheSameRoom(Warrior& otherWarrior);
 };
