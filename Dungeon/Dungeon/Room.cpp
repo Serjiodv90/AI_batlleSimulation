@@ -120,3 +120,9 @@ bool Room::operator!=(const Room & other)
 {
 	return !(*this == other);
 }
+
+double Room::getMaxDistInRoom()
+{
+	return sqrtf(powf(MIN_ROOM_WIDTH_AND_HEIGHT + MAX_ROOM_WIDTH, 2) +
+		powf(MIN_ROOM_WIDTH_AND_HEIGHT + MAX_ROOM_HEIGHT, 2));
+}

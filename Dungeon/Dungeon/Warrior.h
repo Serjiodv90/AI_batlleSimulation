@@ -22,13 +22,13 @@ using namespace std;
 class Warrior
 {
 public:
-	enum Status { SEARCHING_FOR_MEDICINE, SEARCHING_FOR_AMMO, SEARCHING_FOR_OPPONENT, IN_MOVEMENT };
+	enum Status { SEARCHING_FOR_MEDICINE, SEARCHING_FOR_AMMO, SEARCHING_FOR_ENEMY, IN_MOVEMENT, IN_BATTLE };
     ~Warrior();
 private:
 
 	Status status;
 
-    int ammoCounter, medicineCounter, lifeCounter;
+    int ammoCounter, medicineCounter, hp;
     int behaviour;
     Point2D warriorLocation;
 	
@@ -42,6 +42,9 @@ private:
 	Point2D* targetPoint;
 	Status targetPointType;
 	Room* currentRoom;
+
+	bool noMoreAmmoInGame = false;
+	bool noMoreMedicineInGame = false;
 
 	bool AstarSearch(Point2D& targetPoint, int goalPointNumber);
 
@@ -57,17 +60,20 @@ private:
 
 	void clearwarriorMaze();
 
+	//calculate the amount of empty (SPACE) pixels around the warrior and return percentage [0,1]
+	double getEmptyPixelsPercentageAround();
+
 public:
     Warrior(Point2D& initialLocation, int warriorBehaviour, vector<vector<int>>& maze, vector<int>& colors, Room& currentRoom);
     
-    void searchEnemy(const Warrior& enemy);
+    void searchEnemy(Point2D& medicinePoint, int goalPointNumber);
     void escapeFromEnemy(const Warrior& enemy);
     void searchMedicine(Point2D& medicinePoint, int goalPointNumber);
 
     void searchAmmo(Point2D& ammoPoint, int goalPointNumber);
     
-    void addAmmo();
-    void addMedicine();
+    void addAmmo(int amount);
+    void addMedicine(int amount);
 
     int getAmmo();
     int getMedicine();
@@ -93,4 +99,17 @@ public:
 	Room& getCurrentRoom();
 
 	bool checkWarriorsInTheSameRoom(Warrior& otherWarrior);
+
+	//calculate own damage in case that enemy hits, depends on distance between warriors and surrounding environment
+	int calcPotentialDamage(Warrior& enemy);
+
+	void makeDecision();
+	bool shootEnemy(Warrior& warrior);
+
+	int getWarriorMazeColor();
+
+	friend ostream& operator<<(ostream& os, Warrior& warrior);
+
+	void setNoMoreAmmoInGame(bool noMoreAmmo);
+	void setNoMoreMedicineInGame(bool noMoreMedicine);
 };

@@ -34,11 +34,18 @@ const int LEFT = 3;
 const int RIGHT = 4;
 
 const int MAX_NUM_OF_MEDICINE = 7;
-const int MAX_NUM_OF_AMMO = 3;
+const int MAX_NUM_OF_AMMO = 1;
 
 const int MIN_ROOM_WIDTH_AND_HEIGHT = 5;
 const int MAX_ROOM_WIDTH = 15;
 const int MAX_ROOM_HEIGHT = 25;
 
+const int MAX_WARRIOR_HP = 50;
+const int MAX_WARRIOR_BULLETS = 30;
+
+const int MAX_HIT_DAMAGE = 25;
+const int MIN_HIT_DAMAGE = 5;
+
+const int PIXEL_RADIUS = 3;
 
 #endif // !__DEFINITION_H

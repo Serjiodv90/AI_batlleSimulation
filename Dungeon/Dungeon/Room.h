@@ -8,6 +8,8 @@
 
 #pragma once
 #include "Point2D.h"
+#include "Definitions.h"
+
 class Room
 {
 public:
@@ -39,6 +41,8 @@ public:
 	bool isObjInRoom(Point2D& obj);
 	bool operator==(const Room& other);
 	bool operator!=(const Room& other);
+
+	double getMaxDistInRoom();
 };
 
 
