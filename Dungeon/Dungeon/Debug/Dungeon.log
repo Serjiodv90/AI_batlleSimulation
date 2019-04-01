@@ -1,9 +1,11 @@
-﻿  main.cpp
-d:\ai\dungeon\dungeon\dungeon\main.cpp(75): warning C4305: 'argument': truncation from 'double' to 'GLclampf'
-d:\ai\dungeon\dungeon\dungeon\main.cpp(142): warning C4101: 'weight': unreferenced local variable
-d:\ai\dungeon\dungeon\dungeon\main.cpp(466): warning C4018: '<': signed/unsigned mismatch
-d:\ai\dungeon\dungeon\dungeon\main.cpp(482): warning C4018: '<': signed/unsigned mismatch
-d:\ai\dungeon\dungeon\dungeon\main.cpp(616): warning C4018: '<': signed/unsigned mismatch
-d:\ai\dungeon\dungeon\dungeon\main.cpp(261): warning C4172: returning address of local variable or temporary
+﻿  Warrior.cpp
+d:\ai\dungeon\dungeon\dungeon\warrior.cpp(104): warning C4244: 'initializing': conversion from 'double' to 'int', possible loss of data
+d:\ai\dungeon\dungeon\dungeon\warrior.cpp(182): warning C4244: 'argument': conversion from 'double' to 'int', possible loss of data
+d:\ai\dungeon\dungeon\dungeon\warrior.cpp(278): warning C4244: 'argument': conversion from 'double' to 'int', possible loss of data
+d:\ai\dungeon\dungeon\dungeon\warrior.cpp(286): warning C4018: '<': signed/unsigned mismatch
+d:\ai\dungeon\dungeon\dungeon\warrior.cpp(403): warning C4018: '<': signed/unsigned mismatch
+d:\ai\dungeon\dungeon\dungeon\warrior.cpp(404): warning C4018: '<': signed/unsigned mismatch
+d:\ai\dungeon\dungeon\dungeon\warrior.cpp(184): warning C4715: 'Warrior::shootEnemy': not all control paths return a value
+d:\ai\dungeon\dungeon\dungeon\warrior.cpp(371): warning C4715: 'Warrior::AstarSearch': not all control paths return a value
   Dungeon.vcxproj -> D:\AI\dungeon\Dungeon\Debug\Dungeon.exe
   Dungeon.vcxproj -> D:\AI\dungeon\Dungeon\Debug\Dungeon.pdb (Full PDB)

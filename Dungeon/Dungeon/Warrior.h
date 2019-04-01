@@ -14,6 +14,8 @@
 #include <iterator>
 #include "Room.h"
 #include <utility>
+#include <string>
+#include <sstream>
 
 using namespace std;
 
@@ -23,10 +25,15 @@ class Warrior
 {
 public:
 	enum Status { SEARCHING_FOR_MEDICINE, SEARCHING_FOR_AMMO, SEARCHING_FOR_ENEMY, IN_MOVEMENT, IN_BATTLE };
+	string statusString[5] = { "SEARCHING FOR MEDICINE", "SEARCHING FOR AMMO", "SEARCHING FOR ENEMY",
+		"IN MOVEMENT", "IN BATTLE" };
+
     ~Warrior();
 private:
 
+	int astartCount = 0;
 	Status status;
+	string message;
 
     int ammoCounter, medicineCounter, hp;
     int behaviour;
@@ -66,12 +73,13 @@ private:
 public:
     Warrior(Point2D& initialLocation, int warriorBehaviour, vector<vector<int>>& maze, vector<int>& colors, Room& currentRoom);
     
-    void searchEnemy(Point2D& medicinePoint, int goalPointNumber);
     void escapeFromEnemy(const Warrior& enemy);
+   /* void searchEnemy(Point2D& medicinePoint, int goalPointNumber);
     void searchMedicine(Point2D& medicinePoint, int goalPointNumber);
+    void searchAmmo(Point2D& ammoPoint, int goalPointNumber);*/
+	void searchForTarget(Point2D& medicinePoint, int goalPointNumber);
 
-    void searchAmmo(Point2D& ammoPoint, int goalPointNumber);
-    
+
     void addAmmo(int amount);
     void addMedicine(int amount);
 
@@ -112,4 +120,7 @@ public:
 
 	void setNoMoreAmmoInGame(bool noMoreAmmo);
 	void setNoMoreMedicineInGame(bool noMoreMedicine);
+	string getMessage();
+	void addToMessage(string message);
+
 };

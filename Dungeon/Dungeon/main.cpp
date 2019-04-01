@@ -1,4 +1,4 @@
-
+#pragma warning(disable:4996)
 
 #include "GLUT.H"
 #include <iostream>
@@ -13,6 +13,7 @@
 #include "CompareNodes.h"
 #include "Parent.h"
 #include "Warrior.h"
+#include <string.h>
 #include "Definitions.h"
 
 using namespace std;
@@ -224,12 +225,6 @@ void DrawRoom(int right, int left, int bottom, int top)
 			maze[i][j] = SPACE;
 		}
 	}
-
-	//for (int j = left; j <= right; j++)
-	//{
-	//	maze[top][j] = MEDICINE;
-	//}
-
 }
 
 
@@ -307,9 +302,13 @@ void SetupMaze()
 	int i, counter;
 	int left, right, top, bottom;
 	bool isValidRoom;
+	int warriorRandRoom1 = 0, warriorRandRoom2 = 1;
 
-	int warriorRandRoom1 = (int)(rand() % NUM_ROOMS);
-	int warriorRandRoom2 = (int)(rand() % NUM_ROOMS);
+	do	//different rooms - to make it more interesting
+	{
+		warriorRandRoom1 = (int)(rand() % NUM_ROOMS);
+		warriorRandRoom2 = (int)(rand() % NUM_ROOMS);
+	} while (warriorRandRoom1 == warriorRandRoom2);
 
 	int room_xLimit = (MIN_ROOM_WIDTH_AND_HEIGHT + MAX_ROOM_WIDTH);
 	int romm_yLimit = (MIN_ROOM_WIDTH_AND_HEIGHT + MAX_ROOM_HEIGHT);
@@ -432,6 +431,8 @@ void DrawMaze(vector<vector<int>> tmpWarriorMaze)
 			glEnd();
 		}
 
+	
+
 }
 
 Point2D* findNearestTargetObjectForWarrior(Warrior& warrior)
@@ -467,7 +468,8 @@ Point2D* findNearestTargetObjectForWarrior(Warrior& warrior)
 			if (&warrior != warriors[i])
 			{	//check if the enemy in static position, else keep chasing it's previous static position
 				if (warriors[i]->getWarriorStatus() == Warrior::IN_MOVEMENT || warriors[i]->getWarriorStatus() == Warrior::IN_BATTLE)
-					return &warrior.getPreviousTargetPoint();
+					if(&warrior.getPreviousTargetPoint())
+						return &warrior.getPreviousTargetPoint();
 
 				return &warriors[i]->getWarriorLocation();
 			}
@@ -492,16 +494,58 @@ Point2D* findNearestTargetObjectForWarrior(Warrior& warrior)
 	return nearestObj;
 }
 
+void drawWarriorsInfo()
+{
+	glViewport(W, 0, W, H);
+	glColor3d(0.2, 0.9, 0.7);
+	glBegin(GL_POLYGON);
+	glVertex2d(-1, 1);
+	glVertex2d(1, 1);
+	glVertex2d(1, -1);
+	glVertex2d(-1, -1);
+	glEnd();
+
+	for (int i = 0; i < warriors.size(); i++)
+	{
+		string msg = warriors[i]->getMessage();
+		if(i == 0)
+			glColor3d(0, 0, 0);
+		else
+			glColor3d(1, 0, 0);
+		
+		glRasterPos2d(-0.9, 2 - i - 1 - 0.1);
+
+		int len = msg.length();
+		int lineCounter = 1;
+		char* str = new char[len + 1];
+		strcpy(str, msg.c_str());
+		char* line = strtok(str, "\n");
+		while (line != NULL)
+		{
+			for (int j = 0; j < (int)strlen(line); j++)
+			{
+				glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, (line[j]));
+			}
+			glRasterPos2d(-0.9, 2 - i - 1 - (0.1 * ++lineCounter));
+			line = strtok(NULL, "\n");
+		}
+	}
+
+}
+
 void display()
 {
 	glClear(GL_COLOR_BUFFER_BIT);
 
+	glViewport(0, 0, W, H);
 	if (drawWarrior1Maze)
 		DrawMaze(warrior1->getWarriorMaze());
 	else if (drawWarrior2Maze)
 		DrawMaze(warrior2->getWarriorMaze());
 	else
 		DrawMaze(maze);
+
+	drawWarriorsInfo();
 
 	glutSwapBuffers();// show what was drawn in "frame buffer"
 }
@@ -599,7 +643,7 @@ void handleWarriorInMovement(int warriorIndex)
 
 	if (checkWarriorReachedObject(*warriors[warriorIndex]))
 	{
-		//	warriors[warriorIndex]->setTragetPoint(Point2D());	//just for debug!!!DELETE!!!
+	//	warriors[warriorIndex]->setTragetPoint(Point2D());	//just for debug!!!DELETE!!!
 		warriors[warriorIndex]->makeDecision();
 		changeWarriorTargetPoint(*warriors[(warriorIndex + 1) % warriors.size()], warriors[warriorIndex]->getWarriorLocation());
 	}
@@ -626,7 +670,7 @@ void idle()
 				if (warriors[i]->getWarriorStatus() == Warrior::SEARCHING_FOR_MEDICINE)
 				{
 					if (target)
-						warriors[i]->searchMedicine(*target, MEDICINE);
+						warriors[i]->/*searchMedicine*/searchForTarget(*target, MEDICINE);
 					else
 					{
 						warriors[i]->setNoMoreMedicineInGame(true);
@@ -636,7 +680,7 @@ void idle()
 				else if (warriors[i]->getWarriorStatus() == Warrior::SEARCHING_FOR_AMMO)
 				{
 					if(target)
-						warriors[i]->searchAmmo(*target, AMMO);
+						warriors[i]->/*searchAmmo*/searchForTarget(*target, AMMO);
 					else
 					{
 						warriors[i]->setNoMoreAmmoInGame(true);
@@ -651,7 +695,7 @@ void idle()
 					//	warriors[i]->setWarriorStatus(Warrior::IN_BATTLE);
 						//shoot enemy should be invoked from makeDesicion method in Warrior
 						if (warriors[i]->shootEnemy(*warriors[(i + 1) % warriors.size()]))
-						{	bug with room changing after reaches the target!! room is getting deleted, check it
+						{	
 							if (warriors[(i + 1) % warriors.size()]->getLife() <= 0)
 							{
 								isGameOver = true;
@@ -660,7 +704,7 @@ void idle()
 						}
 					}
 					else
-						warriors[i]->searchEnemy(*target, warriors[(i + 1) % warriors.size()]->getWarriorMazeColor());
+						warriors[i]->/*searchEnemy*/searchForTarget(*target, warriors[(i + 1) % warriors.size()]->getWarriorMazeColor());
 				}
 				else if (warriors[i]->getWarriorStatus() == Warrior::IN_MOVEMENT)
 				{
@@ -711,7 +755,7 @@ int main(int argc, char* argv[])
 {
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_RGB | GLUT_DOUBLE);
-	glutInitWindowSize(W, H);
+	glutInitWindowSize(W*2, H);
 	glutInitWindowPosition(200, 100);
 	glutCreateWindow("Dungeoun - BattleField");
 
