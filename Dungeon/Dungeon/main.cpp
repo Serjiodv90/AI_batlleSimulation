@@ -46,6 +46,7 @@ priority_queue<Node, vector<Node>, CompareNodes> pq;
 
 Point2D start, target;
 vector<vector<int>> warriors_color = { { WARRIOR_1, WARRIOR1_PATH,  VISITED_W1 },{ WARRIOR_2, WARRIOR2_PATH, VISITED_W2 } };
+int warriorBehavior = 0;
 
 
 int idleCounter = 0;
@@ -293,7 +294,7 @@ void initWarriorInitialRoom(int warrior, Warrior*& warriorObj, Room& room)
 	int currentX = tmpCenter.GetX();
 	maze[currentY][currentX] = warrior;
 	cout << "Warrior - " << warrior << " location: (X,Y)-->(" << currentX << ", " << currentY << ") " << endl;
-	warriorObj = new Warrior(Point2D(currentX, currentY), 0, maze,
+	warriorObj = new Warrior(Point2D(currentX, currentY), warriorBehavior++, maze,
 		warrior == WARRIOR_1 ? warriors_color[0] : warriors_color[1], room);
 }
 
@@ -435,11 +436,11 @@ void DrawMaze(vector<vector<int>> tmpWarriorMaze)
 
 }
 
-Point2D* findNearestTargetObjectForWarrior(Warrior& warrior)
+Point2D* findNearestTargetObjectForWarrior(int warriorIndex/*Warrior& warrior*/)
 {
-	Point2D warriorLocation = warrior.getWarriorLocation();
+	Point2D warriorLocation = /*warrior*/warriors[warriorIndex]->getWarriorLocation();
 	vector<Point2D>* objVector = nullptr;
-	Warrior::Status warriorStatus = warrior.getPreviousTargetPointType();
+	Warrior::Status warriorStatus = /*warrior.*/warriors[warriorIndex]->getPreviousTargetPointType();
 
 	if (warriorStatus == Warrior::SEARCHING_FOR_MEDICINE)
 	{
@@ -465,11 +466,11 @@ Point2D* findNearestTargetObjectForWarrior(Warrior& warrior)
 	}
 	else if (warriorStatus == Warrior::SEARCHING_FOR_ENEMY)
 		for (int i = 0; i < warriors.size(); i++)
-			if (&warrior != warriors[i])
+			if (/*&warrior*/warriors[warriorIndex] != warriors[i])
 			{	//check if the enemy in static position, else keep chasing it's previous static position
 				if (warriors[i]->getWarriorStatus() == Warrior::IN_MOVEMENT || warriors[i]->getWarriorStatus() == Warrior::IN_BATTLE)
-					if(&warrior.getPreviousTargetPoint())
-						return &warrior.getPreviousTargetPoint();
+					if(&/*warrior.*/warriors[warriorIndex]->getPreviousTargetPoint())
+						return &/*warrior.*/warriors[warriorIndex]->getPreviousTargetPoint();
 
 				return &warriors[i]->getWarriorLocation();
 			}
@@ -550,17 +551,18 @@ void display()
 	glutSwapBuffers();// show what was drawn in "frame buffer"
 }
 
-bool isWarriorChangedRoom(Warrior& warrior)
+bool isWarriorChangedRoom(int warriorIndex/*Warrior& warrior*/)
 {
-	Room* previousRoom = &warrior.getCurrentRoom();
-	Point2D* currentWarriorLocation = &warrior.getWarriorLocation();
+	Room* previousRoom = &warriors[warriorIndex]->getCurrentRoom();
+	Point2D* currentWarriorLocation = &warriors[warriorIndex]->getWarriorLocation();
 
 	for each (Room room in all_rooms)
 	{
 		if (room.isObjInRoom(*currentWarriorLocation))
 			if (room != *previousRoom)
 			{
-				warrior.setCurrentRoom(room);
+				warriors[warriorIndex]->setCurrentRoom(room);
+				warriors[warriorIndex]->makeDecision(*warriors[(warriorIndex + 1) % warriors.size()]);
 				return true;
 			}
 	}
@@ -580,37 +582,42 @@ void deleteObjectFromMaze(Point2D& obj)
 }
 
 //checks if warrior reached its target, if it did then remove it from maze and vector
-bool checkWarriorReachedObject(Warrior& warrior)
+bool checkWarriorReachedObject(int warriorIndex)
 {
-	Point2D* target = &warrior.getPreviousTargetPoint();
-	Warrior::Status warriorStatus = warrior.getPreviousTargetPointType();
+	Point2D* target = &warriors[warriorIndex]->getPreviousTargetPoint();
+	Warrior::Status warriorStatus = warriors[warriorIndex]->getPreviousTargetPointType();
 	vector<Point2D>::iterator it;
 
-	if (warrior.getWarriorLocation() == *target)
+	if (warriorStatus != Warrior::SEARCHING_FOR_ENEMY)
 	{
-		deleteObjectFromMaze(*target);
-
-		if (warriorStatus == Warrior::SEARCHING_FOR_MEDICINE)
+		if (warriors[warriorIndex]->getWarriorLocation() == *target)
 		{
-			it = find(medicine.begin(), medicine.end(), *target);
-			medicine.erase(it);
+			deleteObjectFromMaze(*target);
 
-			int medicineAmount = (rand() % (MAX_WARRIOR_HP / 2)) + MAX_WARRIOR_HP / 2;
-			warrior.addMedicine(medicineAmount);
-			return true;
+			if (warriorStatus == Warrior::SEARCHING_FOR_MEDICINE)
+			{
+				it = find(medicine.begin(), medicine.end(), *target);
+				medicine.erase(it);
+
+				int medicineAmount = (rand() % (MAX_WARRIOR_HP / 2)) + MAX_WARRIOR_HP / 2;
+				warriors[warriorIndex]->addMedicine(medicineAmount);
+				return true;
+			}
+			else if (warriorStatus == Warrior::SEARCHING_FOR_AMMO)
+			{
+				it = find(ammo.begin(), ammo.end(), *target);
+				ammo.erase(it);
+
+				int ammoAmount = (rand() % (MAX_WARRIOR_BULLETS / 2)) + MAX_WARRIOR_BULLETS / 2;
+				warriors[warriorIndex]->addAmmo(ammoAmount);
+				return true;
+			}
+
+
 		}
-		else if (warriorStatus == Warrior::SEARCHING_FOR_AMMO)
-		{
-			it = find(ammo.begin(), ammo.end(), *target);
-			ammo.erase(it);
-
-			int ammoAmount = (rand() % (MAX_WARRIOR_BULLETS / 2)) + MAX_WARRIOR_BULLETS / 2;
-			warrior.addAmmo(ammoAmount);
-			return true;
-		}
-
-
 	}
+	else
+		warriors[warriorIndex]->makeDecision(*warriors[(warriorIndex + 1) % warriors.size()]);
 
 	return false;
 
@@ -631,20 +638,22 @@ void handleWarriorInMovement(int warriorIndex)
 	warriors[warriorIndex]->moveWarriorByOne();
 	maze[warriors[warriorIndex]->getWarriorLocation().GetY()][warriors[warriorIndex]->getWarriorLocation().GetX()] = warriors_color[warriorIndex][0];
 
-	if (isWarriorChangedRoom(*warriors[warriorIndex]))
+	if (isWarriorChangedRoom(warriorIndex))
 	{
 		cout << "warrior: " << warriorIndex << " ,changed room" << endl;
-		Point2D* target = findNearestTargetObjectForWarrior(*warriors[warriorIndex]);
+		warriors[warriorIndex]->makeDecision(*warriors[(warriorIndex + 1) % warriors.size()]);
+		Point2D* target = findNearestTargetObjectForWarrior(/**warriors[*/warriorIndex/*]*/);
 		if (*target != warriors[warriorIndex]->getPreviousTargetPoint())
 		{
+			//warriors[warriorIndex]->makeDecision(*warriors[(warriorIndex + 1) % warriors.size()]);
 			warriors[warriorIndex]->setWarriorStatus(warriors[warriorIndex]->getPreviousTargetPointType());
 		}
 	}
 
-	if (checkWarriorReachedObject(*warriors[warriorIndex]))
+	if (checkWarriorReachedObject(warriorIndex))
 	{
 	//	warriors[warriorIndex]->setTragetPoint(Point2D());	//just for debug!!!DELETE!!!
-		warriors[warriorIndex]->makeDecision();
+		warriors[warriorIndex]->makeDecision(*warriors[(warriorIndex + 1) % warriors.size()]);
 		changeWarriorTargetPoint(*warriors[(warriorIndex + 1) % warriors.size()], warriors[warriorIndex]->getWarriorLocation());
 	}
 
@@ -660,12 +669,12 @@ void idle()
 			for (int i = 0; i < warriors.size(); i++)
 			{
 				if (&warriors[i]->getPreviousTargetPoint())
+				{
+					warriors[i]->createMessage();
 					cout << "\n\nWarrior - " << (i == 0 ? "Black: \n" : "Red: \n") << *warriors[i];
-				/*<< "position: (" << (warriors[i]->getWarriorLocation().GetX()) << ", " << (warriors[i]->getWarriorLocation().GetY())
-				<< "\ntarget: (" << warriors[i]->getPreviousTargetPoint().GetX() << ", " << warriors[i]->getPreviousTargetPoint().GetY()
-				<< "\n\n" << endl;*/
-
-				Point2D* target = findNearestTargetObjectForWarrior(*warriors[i]);
+				}
+			
+				Point2D* target = findNearestTargetObjectForWarrior(/**warriors[*/i/*]*/);
 
 				if (warriors[i]->getWarriorStatus() == Warrior::SEARCHING_FOR_MEDICINE)
 				{
@@ -674,7 +683,7 @@ void idle()
 					else
 					{
 						warriors[i]->setNoMoreMedicineInGame(true);
-						warriors[i]->makeDecision();
+						warriors[i]->makeDecision(*warriors[i]);
 					}
 				}
 				else if (warriors[i]->getWarriorStatus() == Warrior::SEARCHING_FOR_AMMO)
@@ -684,7 +693,7 @@ void idle()
 					else
 					{
 						warriors[i]->setNoMoreAmmoInGame(true);
-						warriors[i]->makeDecision();
+						warriors[i]->makeDecision(*warriors[i]);
 					}
 
 				}
@@ -699,6 +708,7 @@ void idle()
 							if (warriors[(i + 1) % warriors.size()]->getLife() <= 0)
 							{
 								isGameOver = true;
+								warriors[i]->addToMessage("\nI Won!!!!!");
 								cout << "\n\nI Won!!!!!" << endl;
 							}
 						}
@@ -718,6 +728,11 @@ void idle()
 				if (isGameOver)
 					break;
 			}
+
+			//for (int i = 0; i < warriors.size(); i++)
+			//{
+			//	//gather message of each warrior
+			//}
 		}
 	}
 	else

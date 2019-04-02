@@ -28,12 +28,16 @@ public:
 	string statusString[5] = { "SEARCHING FOR MEDICINE", "SEARCHING FOR AMMO", "SEARCHING FOR ENEMY",
 		"IN MOVEMENT", "IN BATTLE" };
 
+	enum Behavior {OFFENSIVE, DEFFENSIVE};
+	string behaviorString[2] = { "offensive", "deffensive" };
+
     ~Warrior();
 private:
 
 	int astartCount = 0;
 	Status status;
 	string message;
+	Behavior behavior;
 
     int ammoCounter, medicineCounter, hp;
     int behaviour;
@@ -49,11 +53,12 @@ private:
 	Point2D* targetPoint;
 	Status targetPointType;
 	Room* currentRoom;
+	vector<Room*> visitedRooms;
 
 	bool noMoreAmmoInGame = false;
 	bool noMoreMedicineInGame = false;
 
-	bool AstarSearch(Point2D& targetPoint, int goalPointNumber);
+	bool AstarSearch(Point2D& targetPoint/*, int goalPointNumber*/);
 
     void fightAgainstEnemy();
 
@@ -61,14 +66,23 @@ private:
 
 	void storeCurrentPointForAstar(int row, int col, Point2D * parentPoint);
 
-	void setPointAsGrayForAStar(int& mazeRow, int& mazeCol, Point2D*& parentPoint, int goalPointNumber);
+	void setPointAsGrayForAStar(int& mazeRow, int& mazeCol, Point2D*& parentPoint/*, int goalPointNumber*/);
 
-	void savePath(Point2D * pt, int goalPoint);
+	void savePath(Point2D * pt/*, int goalPoint*/);
 
 	void clearwarriorMaze();
 
 	//calculate the amount of empty (SPACE) pixels around the warrior and return percentage [0,1]
 	double getEmptyPixelsPercentageAround();
+
+	void insertVisitedRoom();
+
+	Point2D& findTheFarestCornerFromEnemyInRoom(Warrior& enemy);
+
+	void offensiveDesicions(Warrior& enemy);
+
+	void deffensiveDesicions(Warrior& enemy);
+
 
 public:
     Warrior(Point2D& initialLocation, int warriorBehaviour, vector<vector<int>>& maze, vector<int>& colors, Room& currentRoom);
@@ -111,7 +125,7 @@ public:
 	//calculate own damage in case that enemy hits, depends on distance between warriors and surrounding environment
 	int calcPotentialDamage(Warrior& enemy);
 
-	void makeDecision();
+	void makeDecision(Warrior& enemy);
 	bool shootEnemy(Warrior& warrior);
 
 	int getWarriorMazeColor();
@@ -120,6 +134,7 @@ public:
 
 	void setNoMoreAmmoInGame(bool noMoreAmmo);
 	void setNoMoreMedicineInGame(bool noMoreMedicine);
+	void createMessage();
 	string getMessage();
 	void addToMessage(string message);
 

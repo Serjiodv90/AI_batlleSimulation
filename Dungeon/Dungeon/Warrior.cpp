@@ -21,6 +21,8 @@ Warrior::Warrior(Point2D& initialLocation, int warriorBehaviour, vector<vector<i
 	this->gameMaze = &maze;
 	this->warriorColors = &colors;
 	this->message = "";
+	this->behavior = Behavior(warriorBehaviour);
+	insertVisitedRoom();
 }
 
 void Warrior::setWarriorLocation(Point2D& location)
@@ -39,6 +41,11 @@ void Warrior::moveWarriorByOne()
 	{
 		setWarriorLocation(*this->path[0]);
 		this->path.erase(this->path.begin());
+
+		/*if (this->warriorLocation == *this->targetPoint)
+		{
+			clearwarriorMaze();
+		}*/
 	}
 	else	//if there is no where to move, find new target point, so it won't stuck in place
 	{
@@ -75,12 +82,26 @@ void Warrior::setTragetPoint(Point2D& target)
 		this->targetPoint = nullptr;
 }
 
+void Warrior::insertVisitedRoom()
+{
+	if (this->visitedRooms.empty())
+		this->visitedRooms.push_back(this->currentRoom);
+	else
+	{
+		vector<Room*>::iterator it = find(this->visitedRooms.begin(), this->visitedRooms.end(), this->currentRoom);
+		if (it != this->visitedRooms.end())
+			this->visitedRooms.erase(it);
+		this->visitedRooms.push_back(this->currentRoom);
+	}
+}
+
 void Warrior::setCurrentRoom(Room& room)
 {
 	/*if (this->currentRoom)
 		delete this->currentRoom;*/
 
-	this->currentRoom = new Room(room.GetCenter(), room.GetWidth(), room.GetHeight());
+	this->currentRoom = new Room(/*room.GetCenter(), room.GetWidth(), room.GetHeight()*/room);
+	insertVisitedRoom();
 }
 
 Room & Warrior::getCurrentRoom()
@@ -90,8 +111,15 @@ Room & Warrior::getCurrentRoom()
 
 bool Warrior::checkWarriorsInTheSameRoom(Warrior & otherWarrior)
 {
-	if (*this->currentRoom == *otherWarrior.currentRoom)
+	int enemy_x = otherWarrior.getWarriorLocation().GetX();
+	int enemy_y = otherWarrior.getWarriorLocation().GetY();
+
+	if (enemy_x >= this->currentRoom->getLeft() && enemy_x <= this->currentRoom->getRight()
+		&& enemy_y >= this->currentRoom->getTop() && enemy_y <= this->currentRoom->getBottom())
 		return true;
+
+	/*if (*this->currentRoom == *otherWarrior.currentRoom)
+		return true;*/
 	return false;
 }
 
@@ -112,6 +140,8 @@ double Warrior::getEmptyPixelsPercentageAround()
 	return pixelCounter /(double)maxEmptyPixels;
 }
 
+
+
 int Warrior::calcPotentialDamage(Warrior & enemy)
 {
 	double distanceBetweenWarriors = this->warriorLocation.calcDistanceFromTarget(&enemy.getWarriorLocation());
@@ -123,14 +153,114 @@ int Warrior::calcPotentialDamage(Warrior & enemy)
 	return (int)ceil(shootingDamageByDist * getEmptyPixelsPercentageAround());
 }
 
-void Warrior::makeDecision()
+Point2D& Warrior::findTheFarestCornerFromEnemyInRoom(Warrior& enemy)
+{
+	int left = this->currentRoom->getLeft();
+	int right = this->currentRoom->getRight();
+	int top = this->currentRoom->getTop();
+	int bottom = this->currentRoom->getBottom();
+	int sides[2][2] = { {left, right}, {top, bottom} };
+	
+	Point2D tmp = Point2D(left, top);
+	Point2D retPoint = tmp;
+	Point2D& enemyLoc = enemy.getWarriorLocation();
+	int min = tmp.calcDistanceFromTarget(&enemyLoc);
+	int tmpMin;
+
+	for (int i = 0; i < 2; i++)
+	{
+		for (int j = 0; j < 2; j++)
+		{
+			tmp = Point2D(sides[0][i], sides[1][j]);
+			tmpMin = tmp.calcDistanceFromTarget(&enemyLoc);
+			if (tmpMin < min)
+			{
+				min = tmpMin;
+				retPoint = tmp;
+			}
+		}
+	}
+
+	return retPoint;
+	
+}
+
+void Warrior::deffensiveDesicions(Warrior& enemy)
+{
+	int hpLowBound = (rand() % (2 * MAX_WARRIOR_HP / 5)) + (2 * MAX_WARRIOR_HP / 5);
+	int ammoLowBound = (rand() % (2 * MAX_WARRIOR_BULLETS / 3)) + (MAX_WARRIOR_BULLETS / 3);
+	bool areWarriorsInTheSameRoom = checkWarriorsInTheSameRoom(enemy);
+
+	if (!areWarriorsInTheSameRoom)
+	{
+		if (this->hp > hpLowBound)
+		{
+			if (this->ammoCounter > ammoLowBound)
+			{
+				this->status = this->targetPointType = SEARCHING_FOR_ENEMY;
+			}
+			else
+			{
+				if (!this->noMoreAmmoInGame)	//if there is more ammo in the playground
+					this->status = this->targetPointType = SEARCHING_FOR_AMMO;
+				else
+				{
+					if (this->ammoCounter > 0)
+						this->status = this->targetPointType = SEARCHING_FOR_ENEMY;
+					//else...run?!
+				}
+			}
+		}
+		else
+		{
+			if (!this->noMoreMedicineInGame)	//if there is more life in the playground
+				this->status = this->targetPointType = SEARCHING_FOR_MEDICINE;
+			else
+			{
+				if (this->ammoCounter > 0)
+					this->status = this->targetPointType = SEARCHING_FOR_ENEMY;
+				//else...run?!
+
+			}
+		}
+	}
+	else	//in the same room
+	{
+		if (this->ammoCounter > 0)
+		{
+			shootEnemy(enemy);
+			this->status = this->targetPointType;
+			Point2D farestCornerFromEnemy = findTheFarestCornerFromEnemyInRoom(enemy);
+			this->message += "\nGoing to the farest corner to hide";
+			while (this->status != IN_MOVEMENT)
+				AstarSearch(farestCornerFromEnemy);
+		}
+		else
+		{
+			if (!this->noMoreAmmoInGame)	//if there is more ammo in the playground
+				this->status = this->targetPointType = SEARCHING_FOR_AMMO;
+		}
+	}
+
+}
+
+void Warrior::offensiveDesicions(Warrior& enemy)
+{
+
+}
+
+void Warrior::makeDecision(Warrior& enemy)
 {
 	int hpLowBound = (rand() % (2 * MAX_WARRIOR_HP / 5)) + (2 * MAX_WARRIOR_HP / 5);
 	int ammoLowBound = (rand() % (2 * MAX_WARRIOR_BULLETS / 3)) + (MAX_WARRIOR_BULLETS / 3);
 	
 	astartCount = 0;
 
-	if (this->status != IN_BATTLE)
+	if (this->behavior == DEFFENSIVE)
+	{
+		deffensiveDesicions(enemy);
+	}
+	else
 	{
 		if (this->hp > hpLowBound)
 		{
@@ -180,6 +310,7 @@ bool Warrior::shootEnemy(Warrior & enemy)
 		s << "\nI hit the enemy!!! With damage: " << damageToEnemy ;
 		this->message += s.str();
 		enemy.getHurt(damageToEnemy);
+		shoot();
 	}
 }
 
@@ -281,11 +412,12 @@ void Warrior::storeCurrentPointForAstar(int row, int col, Point2D* parentPoint)
 	grayPQ.push(ptAddToGray);
 }
 
-void Warrior::setPointAsGrayForAStar(int& mazeRow, int& mazeCol, Point2D*& parentPoint, int goalPointNumber)
+void Warrior::setPointAsGrayForAStar(int& mazeRow, int& mazeCol, Point2D*& parentPoint/*, int goalPointNumber*/)
 {
 	if (mazeRow < (*this->gameMaze).size() && mazeCol < (*this->gameMaze).size())
 	{
-		if (isBfsFoundPath(mazeRow, mazeCol, goalPointNumber))	//found target			
+		//if (isBfsFoundPath(mazeRow, mazeCol, goalPointNumber))	//found target			
+		if(this->targetPoint->GetX() == mazeCol && this->targetPoint->GetY() == mazeRow)
 			storeCurrentPointForAstar(mazeRow, mazeCol, parentPoint);
 		else if ((*this->gameMaze)[mazeRow][mazeCol] == SPACE && this->warriorMaze[mazeRow][mazeCol] == SPACE)
 		{
@@ -295,13 +427,14 @@ void Warrior::setPointAsGrayForAStar(int& mazeRow, int& mazeCol, Point2D*& paren
 	}
 }
 
-void Warrior::savePath(Point2D* pt, int goalPoint)
+void Warrior::savePath(Point2D* pt/*, int goalPoint*/)
 {
 	Point2D* pt1 = pt;
 
 	while (pt1 != NULL && (*this->gameMaze)[pt1->GetY()][pt1->GetX()] != (*this->warriorColors)[0])
 	{
-		if ((*this->gameMaze)[pt1->GetY()][pt1->GetX()] != goalPoint)
+		//if ((*this->gameMaze)[pt1->GetY()][pt1->GetX()] != goalPoint)
+		if (this->targetPoint->GetX() != pt1->GetX() && this->targetPoint->GetY() != pt1->GetY())
 			this->warriorMaze[pt1->GetY()][pt1->GetX()] = (*this->warriorColors)[1];
 		this->path.insert(this->path.begin(), pt1);
 		int y = pt1->GetY();
@@ -311,7 +444,7 @@ void Warrior::savePath(Point2D* pt, int goalPoint)
 	}
 }
 
-bool Warrior::AstarSearch(Point2D& targetPoint,	int goalPointNumber)
+bool Warrior::AstarSearch(Point2D& targetPoint/*,	int goalPointNumber*/)
 {
 	Point2D* pt;
 	int mazeRow, mazeCol;
@@ -322,7 +455,7 @@ bool Warrior::AstarSearch(Point2D& targetPoint,	int goalPointNumber)
 		return false;
 	else
 	{
-		if (this->status == SEARCHING_FOR_ENEMY)
+		/*if (this->status == SEARCHING_FOR_ENEMY)*/
 			astartCount++;
 		pt = grayPQ.top();	//this will be the parent
 		grayPQ.pop();
@@ -331,7 +464,7 @@ bool Warrior::AstarSearch(Point2D& targetPoint,	int goalPointNumber)
 		mazeCol = pt->GetX();
 
 		//paint pt VISITED
-		if (*pt == *this->targetPoint /*|| ((this->status == SEARCHING_FOR_ENEMY) && (++astartCount >=20))*/)	//found target	
+		if (*pt == *this->targetPoint /*|| ((this->status == SEARCHING_FOR_ENEMY) && */|| (astartCount % 40 == 0))	//found target	
 		{
 			storeCurrentPointForAstar(mazeRow, mazeCol, pt);
 			this->status = IN_MOVEMENT;
@@ -345,26 +478,26 @@ bool Warrior::AstarSearch(Point2D& targetPoint,	int goalPointNumber)
 
 			//check down
 			mazeRow = pt->GetY() + 1;
-			setPointAsGrayForAStar(mazeRow, mazeCol, pt,  goalPointNumber);
+			setPointAsGrayForAStar(mazeRow, mazeCol, pt/*,  goalPointNumber*/);
 
 			//check up
 			mazeRow = pt->GetY() - 1;
-			setPointAsGrayForAStar(mazeRow, mazeCol, pt, goalPointNumber);
+			setPointAsGrayForAStar(mazeRow, mazeCol, pt /*,  goalPointNumber*/);
 
 			//check right
 			mazeRow = pt->GetY();
 			mazeCol = pt->GetX() + 1;
-			setPointAsGrayForAStar(mazeRow, mazeCol, pt, goalPointNumber);
+			setPointAsGrayForAStar(mazeRow, mazeCol, pt /*,  goalPointNumber*/);
 
 			//check left
 			mazeCol = pt->GetX() - 1;
-			setPointAsGrayForAStar(mazeRow, mazeCol, pt, goalPointNumber);
+			setPointAsGrayForAStar(mazeRow, mazeCol, pt /*,  goalPointNumber*/);
 
 		}
 
 		if (savePathBool)	//target was found
 		{
-			savePath(pt, goalPointNumber);
+			savePath(pt/*, goalPointNumber*/);
 			return true;
 		}
 	}
@@ -405,6 +538,9 @@ void Warrior::clearwarriorMaze()
 		{
 			/*if (find(this->warriorColors->begin(), this->warriorColors->end(), this->warriorMaze[i][j]) != this->warriorColors->end()
 				|| this->warriorMaze[i][j] == GRAY)*/
+			if ((*this->gameMaze)[i][j] == WARRIOR_1 || (*this->gameMaze)[i][j] == WARRIOR_2)
+				this->warriorMaze[i][j] = SPACE;
+			else
 				this->warriorMaze[i][j] = /*SPACE*/ (*this->gameMaze)[i][j];
 				
 
@@ -420,7 +556,7 @@ void Warrior::searchForTarget(Point2D& targetPoint, int goalPointNumber)
 	{
 		if (*this->targetPoint != targetPoint)
 		{
-			delete this->targetPoint;
+			//delete this->targetPoint;
 			this->targetPoint = new Point2D(targetPoint.GetX(), targetPoint.GetY());
 		//	this->targetPointType = Warrior::SEARCHING_FOR_MEDICINE;
 
@@ -443,7 +579,7 @@ void Warrior::searchForTarget(Point2D& targetPoint, int goalPointNumber)
 	else
 		this->targetPoint = new Point2D(targetPoint.GetX(), targetPoint.GetY());
 
-	AstarSearch(targetPoint, goalPointNumber);
+	AstarSearch(targetPoint/*, goalPointNumber*/);
 }
 
 //void Warrior::searchMedicine(Point2D& medicinePoint, int goalPointNumber)
@@ -493,9 +629,22 @@ void Warrior::searchForTarget(Point2D& targetPoint, int goalPointNumber)
 //
 //}
 
+void Warrior::createMessage()
+{
+	ostringstream s;
+	s << "position: \t(" << (this->warriorLocation.GetX()) << ", " << (this->warriorLocation.GetY()) << ")"
+		<< "\nbehavior: \t" << this->behaviorString[this->behavior]
+		<< "\ntarget: \t\t(" << (this->targetPoint->GetX()) << ", " << this->targetPoint->GetY() << ")"
+		<< "\ntarget type: \t" << this->statusString[this->targetPointType]
+		<< "\nHP: \t\t" << this->hp
+		<< "\nAmmo: \t\t" << this->ammoCounter;
+		
+	this->message = s.str();
+}
+
 ostream & operator<<(ostream & os, Warrior & warrior)
 {
-		ostringstream s;
+	/*	ostringstream s;
 		s << "position:\t(" << (warrior.warriorLocation.GetX()) << ", " << (warrior.warriorLocation.GetY()) << ")"
 		<< "\ntarget:\t\t(" << (warrior.targetPoint->GetX()) << ", " << warrior.targetPoint->GetY() << ")"
 		<< "\ntarget type:\t" << warrior.statusString[warrior.targetPointType]
@@ -503,7 +652,7 @@ ostream & operator<<(ostream & os, Warrior & warrior)
 		<< "\nAmmo:\t\t" << warrior.ammoCounter
 		<< "\n\n" << endl;
 
-		warrior.message = s.str();
+		warrior.message = s.str();*/
 
 		return os<< warrior.message;
 }
