@@ -556,18 +556,23 @@ bool isWarriorChangedRoom(int warriorIndex/*Warrior& warrior*/)
 	Room* previousRoom = &warriors[warriorIndex]->getCurrentRoom();
 	Point2D* currentWarriorLocation = &warriors[warriorIndex]->getWarriorLocation();
 
-	for each (Room room in all_rooms)
-	{
-		if (room.isObjInRoom(*currentWarriorLocation))
-			if (room != *previousRoom)
-			{
-				warriors[warriorIndex]->setCurrentRoom(room);
-				warriors[warriorIndex]->makeDecision(*warriors[(warriorIndex + 1) % warriors.size()]);
-				return true;
-			}
-	}
+	if (previousRoom)
+		if (previousRoom->isObjInRoom(*currentWarriorLocation))
+			return false;
+	
+		for each (Room room in all_rooms)
+		{
+			if (room.isObjInRoom(*currentWarriorLocation))
+				if (room != *previousRoom)
+				{
+					warriors[warriorIndex]->setCurrentRoom(room);
+					//		warriors[warriorIndex]->makeDecision(*warriors[(warriorIndex + 1) % warriors.size()]);
+					return true;
+				}
+		}
 
-	return false;
+		warriors[warriorIndex]->setNotInRoom();
+		return false;
 
 }
 
@@ -617,7 +622,11 @@ bool checkWarriorReachedObject(int warriorIndex)
 		}
 	}
 	else
-		warriors[warriorIndex]->makeDecision(*warriors[(warriorIndex + 1) % warriors.size()]);
+	{
+		if(warriors[warriorIndex]->checkWarriorsInTheSameRoom(*warriors[(warriorIndex + 1) % warriors.size()]))
+			warriors[warriorIndex]->makeDecision(*warriors[(warriorIndex + 1) % warriors.size()]);
+	}
+		
 
 	return false;
 
@@ -629,7 +638,6 @@ void changeWarriorTargetPoint(Warrior& otherWarrior, Point2D& irelevantPoint)
 {
 	if (otherWarrior.getPreviousTargetPoint() == irelevantPoint)	//this means that the other warrior found the same target and took it
 		otherWarrior.setWarriorStatus(otherWarrior.getPreviousTargetPointType());
-
 }
 
 void handleWarriorInMovement(int warriorIndex)
@@ -640,13 +648,23 @@ void handleWarriorInMovement(int warriorIndex)
 
 	if (isWarriorChangedRoom(warriorIndex))
 	{
+		warriors[warriorIndex]->addToMessage("\nI've entered to another room");
 		cout << "warrior: " << warriorIndex << " ,changed room" << endl;
-		warriors[warriorIndex]->makeDecision(*warriors[(warriorIndex + 1) % warriors.size()]);
-		Point2D* target = findNearestTargetObjectForWarrior(/**warriors[*/warriorIndex/*]*/);
-		if (*target != warriors[warriorIndex]->getPreviousTargetPoint())
+
+		if(warriors[warriorIndex]->getPreviousTargetPointType() == Warrior::SEARCHING_FOR_ENEMY)
 		{
-			//warriors[warriorIndex]->makeDecision(*warriors[(warriorIndex + 1) % warriors.size()]);
-			warriors[warriorIndex]->setWarriorStatus(warriors[warriorIndex]->getPreviousTargetPointType());
+			warriors[warriorIndex]->searchForTarget(warriors[(warriorIndex + 1) % warriors.size()]->getWarriorLocation()
+				, warriors[(warriorIndex + 1) % warriors.size()]->getWarriorMazeColor());
+		}
+	//	warriors[warriorIndex]->makeDecision(*warriors[(warriorIndex + 1) % warriors.size()]);
+		else
+		{
+			Point2D* target = findNearestTargetObjectForWarrior(/**warriors[*/warriorIndex/*]*/);
+			if (*target != warriors[warriorIndex]->getPreviousTargetPoint())
+			{
+				//warriors[warriorIndex]->makeDecision(*warriors[(warriorIndex + 1) % warriors.size()]);
+				warriors[warriorIndex]->setWarriorStatus(warriors[warriorIndex]->getPreviousTargetPointType());
+			}
 		}
 	}
 
@@ -657,6 +675,7 @@ void handleWarriorInMovement(int warriorIndex)
 		changeWarriorTargetPoint(*warriors[(warriorIndex + 1) % warriors.size()], warriors[warriorIndex]->getWarriorLocation());
 	}
 
+	//check if looking for enemy, every room get enemy location again, and handle that "ive change room" thing in the tunnel
 
 }
 
@@ -671,7 +690,7 @@ void idle()
 				if (&warriors[i]->getPreviousTargetPoint())
 				{
 					warriors[i]->createMessage();
-					cout << "\n\nWarrior - " << (i == 0 ? "Black: \n" : "Red: \n") << *warriors[i];
+					/*cout << "\n\nWarrior - " << (i == 0 ? "Black: \n" : "Red: \n") *//*<< *warriors[i]*/;
 				}
 			
 				Point2D* target = findNearestTargetObjectForWarrior(/**warriors[*/i/*]*/);
@@ -683,7 +702,7 @@ void idle()
 					else
 					{
 						warriors[i]->setNoMoreMedicineInGame(true);
-						warriors[i]->makeDecision(*warriors[i]);
+						warriors[i]->makeDecision(*warriors[(i + 1) % warriors.size()]);
 					}
 				}
 				else if (warriors[i]->getWarriorStatus() == Warrior::SEARCHING_FOR_AMMO)
@@ -693,7 +712,7 @@ void idle()
 					else
 					{
 						warriors[i]->setNoMoreAmmoInGame(true);
-						warriors[i]->makeDecision(*warriors[i]);
+						warriors[i]->makeDecision(*warriors[(i + 1) % warriors.size()]);
 					}
 
 				}
@@ -725,18 +744,26 @@ void idle()
 					}
 				}
 
+				for (int i = 0; i < warriors.size(); i++)
+				{
+					if (warriors[i]->getLife() <= 0)
+						isGameOver = true;
+				}
+
 				if (isGameOver)
 					break;
 			}
 
-			//for (int i = 0; i < warriors.size(); i++)
-			//{
-			//	//gather message of each warrior
-			//}
+			for (int i = 0; i < warriors.size(); i++)
+			{
+				warriors[i]->addSpecsToMessage();
+				cout << "\n\nWarrior - " << (i == 0 ? "Black: \n" : "Red: \n");
+				cout << *warriors[i] << "\n" << endl;
+			}
 		}
 	}
-	else
-		cout << "GAME OVER!!!" << endl;
+	/*else
+		cout << "GAME OVER!!!" << endl;*/
 
 
 	glutPostRedisplay();// calls indirectly to display

@@ -37,6 +37,7 @@ private:
 	int astartCount = 0;
 	Status status;
 	string message;
+	string specs;
 	Behavior behavior;
 
     int ammoCounter, medicineCounter, hp;
@@ -71,6 +72,8 @@ private:
 	void savePath(Point2D * pt/*, int goalPoint*/);
 
 	void clearwarriorMaze();
+
+	void clearAllPathes();
 
 	//calculate the amount of empty (SPACE) pixels around the warrior and return percentage [0,1]
 	double getEmptyPixelsPercentageAround();
@@ -118,6 +121,7 @@ public:
 	void setTragetPoint(Point2D& target);
 
 	void setCurrentRoom(Room& room);
+	void setNotInRoom();
 	Room& getCurrentRoom();
 
 	bool checkWarriorsInTheSameRoom(Warrior& otherWarrior);
@@ -135,6 +139,7 @@ public:
 	void setNoMoreAmmoInGame(bool noMoreAmmo);
 	void setNoMoreMedicineInGame(bool noMoreMedicine);
 	void createMessage();
+	void addSpecsToMessage();
 	string getMessage();
 	void addToMessage(string message);
 

@@ -113,7 +113,10 @@ bool Room::isObjInRoom(Point2D & obj)
 
 bool Room::operator==(const Room & other)
 {
-	return this->center == other.center;
+	if (this && &other)
+		return this->center == other.center;
+	else
+		return false;
 }
 
 bool Room::operator!=(const Room & other)
