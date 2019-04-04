@@ -16,6 +16,8 @@
 #include <utility>
 #include <string>
 #include <sstream>
+#include <time.h>
+
 
 using namespace std;
 
@@ -33,6 +35,8 @@ public:
 
     ~Warrior();
 private:
+
+	/***********************		ATTRIBUTES			************************/
 
 	int astartCount = 0;
 	Status status;
@@ -59,17 +63,19 @@ private:
 	bool noMoreAmmoInGame = false;
 	bool noMoreMedicineInGame = false;
 
-	bool AstarSearch(Point2D& targetPoint/*, int goalPointNumber*/);
+	/***********************		METHODS			************************/
+
+	bool AstarSearch(Point2D& targetPoint);
 
     void fightAgainstEnemy();
 
 	bool isBfsFoundPath(int row, int col, int goalPoint);
 
-	void storeCurrentPointForAstar(int row, int col, Point2D * parentPoint);
+	void storeCurrentPointForAstar(int row, int col, Point2D * parentPoint, Point2D* targetPoint);
 
-	void setPointAsGrayForAStar(int& mazeRow, int& mazeCol, Point2D*& parentPoint/*, int goalPointNumber*/);
+	void setPointAsGrayForAStar(int& mazeRow, int& mazeCol, Point2D*& parentPoint, Point2D* targetPoint);
 
-	void savePath(Point2D * pt/*, int goalPoint*/);
+	void savePath(Point2D * pt, Point2D* targetPoint);
 
 	void clearwarriorMaze();
 
@@ -90,12 +96,7 @@ private:
 public:
     Warrior(Point2D& initialLocation, int warriorBehaviour, vector<vector<int>>& maze, vector<int>& colors, Room& currentRoom);
     
-    void escapeFromEnemy(const Warrior& enemy);
-   /* void searchEnemy(Point2D& medicinePoint, int goalPointNumber);
-    void searchMedicine(Point2D& medicinePoint, int goalPointNumber);
-    void searchAmmo(Point2D& ammoPoint, int goalPointNumber);*/
 	void searchForTarget(Point2D& medicinePoint, int goalPointNumber);
-
 
     void addAmmo(int amount);
     void addMedicine(int amount);
@@ -123,6 +124,7 @@ public:
 	void setCurrentRoom(Room& room);
 	void setNotInRoom();
 	Room& getCurrentRoom();
+	Room& getPreviousRoomVisitet();
 
 	bool checkWarriorsInTheSameRoom(Warrior& otherWarrior);
 
@@ -138,7 +140,6 @@ public:
 
 	void setNoMoreAmmoInGame(bool noMoreAmmo);
 	void setNoMoreMedicineInGame(bool noMoreMedicine);
-	void createMessage();
 	void addSpecsToMessage();
 	string getMessage();
 	void addToMessage(string message);

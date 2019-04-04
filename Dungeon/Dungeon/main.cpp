@@ -30,7 +30,7 @@ Room all_rooms[NUM_ROOMS];
 Warrior* warrior1;
 Warrior* warrior2;
 
-vector<Warrior*> warriors /*= { warrior1, warrior2 }*/;
+vector<Warrior*> warriors ;
 
 // vector for tunnels
 vector <Point2D> gray;
@@ -199,8 +199,6 @@ void DigTunnels()
 			start = all_rooms[i].GetCenter();
 			target = all_rooms[j].GetCenter();
 
-			printf("Start: %d      Target: %d\n", i, j);
-
 			Node* tmp = new Node(start, target, 0);
 			while (!pq.empty())
 				pq.pop();
@@ -237,10 +235,10 @@ void DrawRoom(int right, int left, int bottom, int top)
 
 Point2D& findPositionForObjectInRoom(Room& room)
 {
-	int left = room.getLeft()/*GetCenter().GetX() - room.GetWidth() / 2*/;
-	int right = room.getRight()/*GetCenter().GetX() + room.GetWidth() / 2*/;
-	int top = room.getTop()/*GetCenter().GetY() - room.GetHeight() / 2*/;
-	int bottom = room.getBottom()/*GetCenter().GetY() + room.GetHeight() / 2*/;
+	int left = room.getLeft();
+	int right = room.getRight();
+	int top = room.getTop();
+	int bottom = room.getBottom();
 	bool noCollision = false;
 
 	int obj_x, obj_y;
@@ -305,6 +303,8 @@ void SetupMaze()
 	bool isValidRoom;
 	int warriorRandRoom1 = 0, warriorRandRoom2 = 1;
 
+	cout << "CREATING ROOMS\n\n" << endl;
+
 	do	//different rooms - to make it more interesting
 	{
 		warriorRandRoom1 = (int)(rand() % NUM_ROOMS);
@@ -327,13 +327,9 @@ void SetupMaze()
 				, MIN_ROOM_WIDTH_AND_HEIGHT + rand() % MAX_ROOM_HEIGHT);
 
 			top = pr->GetCenter().GetY() - pr->GetHeight() / 2;
-			//if (top < 0) top = 0;
 			bottom = pr->GetCenter().GetY() + pr->GetHeight() / 2;
-			//if (bottom >= MSIZE) bottom = MSIZE - 1;
 			left = pr->GetCenter().GetX() - pr->GetWidth() / 2;
-			//if (left < 0) left = 0;
 			right = pr->GetCenter().GetX() + pr->GetWidth() / 2;
-			//if (right >= MSIZE) right = MSIZE - 1;
 
 			isValidRoom = true;
 			for (i = 0; i < counter && isValidRoom; i++)
@@ -372,6 +368,7 @@ void SetupMaze()
 		}
 	}
 
+	cout << "DIGGING TUNNELS\n\n" << endl;
 	DigTunnels();
 	initWarriorInitialRoom(WARRIOR_1, warrior1, all_rooms[warriorRandRoom1]);
 	initWarriorInitialRoom(WARRIOR_2, warrior2, all_rooms[warriorRandRoom2]);
@@ -436,11 +433,11 @@ void DrawMaze(vector<vector<int>> tmpWarriorMaze)
 
 }
 
-Point2D* findNearestTargetObjectForWarrior(int warriorIndex/*Warrior& warrior*/)
+Point2D* findNearestTargetObjectForWarrior(int warriorIndex)
 {
-	Point2D warriorLocation = /*warrior*/warriors[warriorIndex]->getWarriorLocation();
+	Point2D warriorLocation = warriors[warriorIndex]->getWarriorLocation();
 	vector<Point2D>* objVector = nullptr;
-	Warrior::Status warriorStatus = /*warrior.*/warriors[warriorIndex]->getPreviousTargetPointType();
+	Warrior::Status warriorStatus = warriors[warriorIndex]->getPreviousTargetPointType();
 
 	if (warriorStatus == Warrior::SEARCHING_FOR_MEDICINE)
 	{
@@ -448,7 +445,6 @@ Point2D* findNearestTargetObjectForWarrior(int warriorIndex/*Warrior& warrior*/)
 			objVector = &medicine;
 		else
 		{
-			/*isGameOver = true;*/
 			cout << "\nNo more medicine" << endl;
 			return nullptr;
 		}
@@ -459,21 +455,30 @@ Point2D* findNearestTargetObjectForWarrior(int warriorIndex/*Warrior& warrior*/)
 			objVector = &ammo;
 		else
 		{
-			/*isGameOver = true;*/
 			cout << "\nNo more ammo" << endl;
 			return nullptr;
 		}
 	}
 	else if (warriorStatus == Warrior::SEARCHING_FOR_ENEMY)
+	{
 		for (int i = 0; i < warriors.size(); i++)
-			if (/*&warrior*/warriors[warriorIndex] != warriors[i])
+			if (warriors[warriorIndex] != warriors[i])
 			{	//check if the enemy in static position, else keep chasing it's previous static position
 				if (warriors[i]->getWarriorStatus() == Warrior::IN_MOVEMENT || warriors[i]->getWarriorStatus() == Warrior::IN_BATTLE)
-					if(&/*warrior.*/warriors[warriorIndex]->getPreviousTargetPoint())
-						return &/*warrior.*/warriors[warriorIndex]->getPreviousTargetPoint();
-
-				return &warriors[i]->getWarriorLocation();
+				{
+					if (&warriors[warriorIndex]->getPreviousTargetPoint())
+						return &warriors[warriorIndex]->getPreviousTargetPoint();
+				}
+				if (&warriors[i]->getCurrentRoom())	//if the enemy isn't in a tunnel
+					return &warriors[i]->getWarriorLocation();
+				else
+					return &warriors[warriorIndex]->getPreviousRoomVisitet().GetCenter();
 			}
+	}
+	else if (warriorStatus == Warrior::IN_BATTLE)
+		return nullptr;
+
+
 
 
 
@@ -498,7 +503,7 @@ Point2D* findNearestTargetObjectForWarrior(int warriorIndex/*Warrior& warrior*/)
 void drawWarriorsInfo()
 {
 	glViewport(W, 0, W, H);
-	glColor3d(0.2, 0.9, 0.7);
+	glColor3d(0.8, 0.8, 0.8);
 	glBegin(GL_POLYGON);
 	glVertex2d(-1, 1);
 	glVertex2d(1, 1);
@@ -514,7 +519,6 @@ void drawWarriorsInfo()
 		else
 			glColor3d(1, 0, 0);
 		
-		glRasterPos2d(-0.9, 2 - i - 1 - 0.1);
 
 		int len = msg.length();
 		int lineCounter = 1;
@@ -523,11 +527,14 @@ void drawWarriorsInfo()
 		char* line = strtok(str, "\n");
 		while (line != NULL)
 		{
+			glRasterPos2d(-0.9, 2 - i - 1 - (0.05 * lineCounter));
 			for (int j = 0; j < (int)strlen(line); j++)
 			{
-				glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, (line[j]));
+				glutBitmapCharacter(GLUT_BITMAP_HELVETICA_12, (line[j]));
 			}
-			glRasterPos2d(-0.9, 2 - i - 1 - (0.1 * ++lineCounter));
+
+			
+			lineCounter++;
 			line = strtok(NULL, "\n");
 		}
 	}
@@ -551,7 +558,7 @@ void display()
 	glutSwapBuffers();// show what was drawn in "frame buffer"
 }
 
-bool isWarriorChangedRoom(int warriorIndex/*Warrior& warrior*/)
+bool isWarriorChangedRoom(int warriorIndex)
 {
 	Room* previousRoom = &warriors[warriorIndex]->getCurrentRoom();
 	Point2D* currentWarriorLocation = &warriors[warriorIndex]->getWarriorLocation();
@@ -566,7 +573,6 @@ bool isWarriorChangedRoom(int warriorIndex/*Warrior& warrior*/)
 				if (room != *previousRoom)
 				{
 					warriors[warriorIndex]->setCurrentRoom(room);
-					//		warriors[warriorIndex]->makeDecision(*warriors[(warriorIndex + 1) % warriors.size()]);
 					return true;
 				}
 		}
@@ -581,7 +587,6 @@ void deleteObjectFromMaze(Point2D& obj)
 	int currentY = obj.GetY();
 	int currentX = obj.GetX();
 
-	//maze[currentY][currentX] = SPACE;
 	maze[currentY - 1][currentX] = SPACE;
 	maze[currentY + 1][currentX] = SPACE;
 }
@@ -646,23 +651,29 @@ void handleWarriorInMovement(int warriorIndex)
 	warriors[warriorIndex]->moveWarriorByOne();
 	maze[warriors[warriorIndex]->getWarriorLocation().GetY()][warriors[warriorIndex]->getWarriorLocation().GetX()] = warriors_color[warriorIndex][0];
 
+	Warrior::Status warriorTargetType = warriors[warriorIndex]->getPreviousTargetPointType();
+
+	
+
 	if (isWarriorChangedRoom(warriorIndex))
 	{
 		warriors[warriorIndex]->addToMessage("\nI've entered to another room");
 		cout << "warrior: " << warriorIndex << " ,changed room" << endl;
 
-		if(warriors[warriorIndex]->getPreviousTargetPointType() == Warrior::SEARCHING_FOR_ENEMY)
+		if(warriorTargetType == Warrior::SEARCHING_FOR_ENEMY)
 		{
-			warriors[warriorIndex]->searchForTarget(warriors[(warriorIndex + 1) % warriors.size()]->getWarriorLocation()
-				, warriors[(warriorIndex + 1) % warriors.size()]->getWarriorMazeColor());
+			if(&warriors[(warriorIndex + 1) % warriors.size()]->getCurrentRoom())
+				warriors[warriorIndex]->searchForTarget(warriors[(warriorIndex + 1) % warriors.size()]->getCurrentRoom().GetCenter()
+					, warriors[(warriorIndex + 1) % warriors.size()]->getWarriorMazeColor());
+			else
+				warriors[warriorIndex]->searchForTarget(warriors[warriorIndex]->getPreviousTargetPoint()
+					, warriors[(warriorIndex + 1) % warriors.size()]->getWarriorMazeColor());
 		}
-	//	warriors[warriorIndex]->makeDecision(*warriors[(warriorIndex + 1) % warriors.size()]);
 		else
 		{
 			Point2D* target = findNearestTargetObjectForWarrior(/**warriors[*/warriorIndex/*]*/);
 			if (*target != warriors[warriorIndex]->getPreviousTargetPoint())
 			{
-				//warriors[warriorIndex]->makeDecision(*warriors[(warriorIndex + 1) % warriors.size()]);
 				warriors[warriorIndex]->setWarriorStatus(warriors[warriorIndex]->getPreviousTargetPointType());
 			}
 		}
@@ -670,12 +681,14 @@ void handleWarriorInMovement(int warriorIndex)
 
 	if (checkWarriorReachedObject(warriorIndex))
 	{
-	//	warriors[warriorIndex]->setTragetPoint(Point2D());	//just for debug!!!DELETE!!!
 		warriors[warriorIndex]->makeDecision(*warriors[(warriorIndex + 1) % warriors.size()]);
 		changeWarriorTargetPoint(*warriors[(warriorIndex + 1) % warriors.size()], warriors[warriorIndex]->getWarriorLocation());
 	}
 
-	//check if looking for enemy, every room get enemy location again, and handle that "ive change room" thing in the tunnel
+
+		if (warriors[warriorIndex]->checkWarriorsInTheSameRoom(*warriors[(warriorIndex + 1) % warriors.size()]))
+			warriors[warriorIndex]->makeDecision(*warriors[(warriorIndex + 1) % warriors.size()]);
+
 
 }
 
@@ -687,18 +700,13 @@ void idle()
 		{
 			for (int i = 0; i < warriors.size(); i++)
 			{
-				if (&warriors[i]->getPreviousTargetPoint())
-				{
-					warriors[i]->createMessage();
-					/*cout << "\n\nWarrior - " << (i == 0 ? "Black: \n" : "Red: \n") *//*<< *warriors[i]*/;
-				}
-			
-				Point2D* target = findNearestTargetObjectForWarrior(/**warriors[*/i/*]*/);
+
+				Point2D* target = findNearestTargetObjectForWarrior(i);
 
 				if (warriors[i]->getWarriorStatus() == Warrior::SEARCHING_FOR_MEDICINE)
 				{
 					if (target)
-						warriors[i]->/*searchMedicine*/searchForTarget(*target, MEDICINE);
+						warriors[i]->searchForTarget(*target, MEDICINE);
 					else
 					{
 						warriors[i]->setNoMoreMedicineInGame(true);
@@ -707,8 +715,8 @@ void idle()
 				}
 				else if (warriors[i]->getWarriorStatus() == Warrior::SEARCHING_FOR_AMMO)
 				{
-					if(target)
-						warriors[i]->/*searchAmmo*/searchForTarget(*target, AMMO);
+					if (target)
+						warriors[i]->searchForTarget(*target, AMMO);
 					else
 					{
 						warriors[i]->setNoMoreAmmoInGame(true);
@@ -720,20 +728,19 @@ void idle()
 				{
 					if (warriors[i]->checkWarriorsInTheSameRoom(*warriors[(i + 1) % warriors.size()]))
 					{
-					//	warriors[i]->setWarriorStatus(Warrior::IN_BATTLE);
-						//shoot enemy should be invoked from makeDesicion method in Warrior
+							//shoot enemy should be invoked from makeDesicion method in Warrior
 						if (warriors[i]->shootEnemy(*warriors[(i + 1) % warriors.size()]))
-						{	
+						{
 							if (warriors[(i + 1) % warriors.size()]->getLife() <= 0)
 							{
 								isGameOver = true;
-								warriors[i]->addToMessage("\nI Won!!!!!");
+								warriors[i]->addToMessage("\nENEMY IS DOWN! I WON!!!");
 								cout << "\n\nI Won!!!!!" << endl;
 							}
 						}
 					}
 					else
-						warriors[i]->/*searchEnemy*/searchForTarget(*target, warriors[(i + 1) % warriors.size()]->getWarriorMazeColor());
+						warriors[i]->searchForTarget(*target, warriors[(i + 1) % warriors.size()]->getWarriorMazeColor());
 				}
 				else if (warriors[i]->getWarriorStatus() == Warrior::IN_MOVEMENT)
 				{
@@ -743,6 +750,8 @@ void idle()
 						handleWarriorInMovement(i);
 					}
 				}
+				else if (warriors[i]->getWarriorStatus() == Warrior::IN_BATTLE)
+					warriors[i]->makeDecision(*warriors[(i + 1) % warriors.size()]);
 
 				for (int i = 0; i < warriors.size(); i++)
 				{
@@ -762,8 +771,6 @@ void idle()
 			}
 		}
 	}
-	/*else
-		cout << "GAME OVER!!!" << endl;*/
 
 
 	glutPostRedisplay();// calls indirectly to display
@@ -786,7 +793,7 @@ void Menu(int choice)
 		drawWarrior2Maze = false;
 		break;
 	case 4:
-		startGame = true;
+		startGame = !startGame;
 	default:
 		break;
 	}
@@ -797,7 +804,7 @@ int main(int argc, char* argv[])
 {
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_RGB | GLUT_DOUBLE);
-	glutInitWindowSize(W*2, H);
+	glutInitWindowSize(W*1.5, H);
 	glutInitWindowPosition(200, 100);
 	glutCreateWindow("Dungeoun - BattleField");
 
@@ -809,7 +816,7 @@ int main(int argc, char* argv[])
 	glutAddMenuEntry("Draw warrior black maze", 1);
 	glutAddMenuEntry("Draw warrior red maze", 2);
 	glutAddMenuEntry("Draw battlefield maze", 3);
-	glutAddMenuEntry("Start", 4);
+	glutAddMenuEntry("Start / Pause", 4);
 	glutAttachMenu(GLUT_RIGHT_BUTTON);
 
 	glutMainLoop();
